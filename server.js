@@ -17,20 +17,24 @@ app.use(express.json());
 
 // Test Route
 app.get("/", (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: "Complaint Management API is Running..."
-    });
+  res.status(200).json({
+    success: true,
+    message: "Complaint Management API is Running...",
+  });
 });
 
-// Import Routes (we'll create these next)
+// Authentication Routes
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes);
+
+// Complaint Routes
 const complaintRoutes = require("./routes/complaintRoutes");
 app.use("/api/complaints", complaintRoutes);
 
 // Port
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 1141;
 
 // Start Server
 app.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
