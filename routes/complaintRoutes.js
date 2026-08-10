@@ -13,6 +13,7 @@ const {
   holdComplaint,
   releaseComplaint,
   addComplaintComment,
+  replyToComment,
   getComplaintComments,
   addCompletionReport,
   addChatMessage,
@@ -25,16 +26,17 @@ const { protect, authorize } = require("../middleware/authMiddleware");
 
 router.get("/", getAllComplaints);
 router.get("/nearby", getNearbyComplaints);
-router.get("/my", protect, authorize("citizen"), getMyComplaints);
+router.get("/my", protect, getMyComplaints);
 router.get("/admin/stream", protect, authorize("admin"), getAdminStream);
 router.post("/:id/upvote", protect, upvoteComplaint);
 router.post("/:id/vote", protect, voteComplaint);
 router.post("/:id/hold", protect, authorize("officer", "councillor", "mayor", "admin"), holdComplaint);
 router.post("/:id/release", protect, authorize("officer", "councillor", "mayor", "admin"), releaseComplaint);
 router.post("/:id/comments", protect, addComplaintComment);
+router.post("/:id/comments/:commentId/replies", protect, replyToComment);
 router.get("/:id/comments", getComplaintComments);
-router.post("/:id/messages", protect, authorize("officer", "field_worker", "councillor", "mayor", "admin"), addChatMessage);
-router.get("/:id/messages", getChatMessages);
+router.post("/:id/messages", protect, addChatMessage);
+router.get("/:id/messages", protect, getChatMessages);
 router.get("/:id/ledger", getComplaintLedger);
 router.post(
   "/:id/reports",

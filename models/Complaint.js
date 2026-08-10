@@ -21,14 +21,26 @@ const ledgerEntrySchema = new mongoose.Schema(
   { _id: false, timestamps: true }
 );
 
-const commentSchema = new mongoose.Schema(
+const replySchema = new mongoose.Schema(
   {
+    authorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     authorName: { type: String, required: true },
     authorRole: { type: String, default: "citizen" },
     body: { type: String, required: true },
-    channel: { type: String, enum: ["public", "internal"], default: "public" },
   },
-  { _id: false, timestamps: true }
+  { timestamps: true }
+);
+
+const commentSchema = new mongoose.Schema(
+  {
+    authorId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    authorName: { type: String, required: true },
+    authorRole: { type: String, default: "citizen" },
+    body: { type: String, required: true },
+    channel: { type: String, enum: ["public", "internal", "private"], default: "public" },
+    replies: { type: [replySchema], default: [] },
+  },
+  { timestamps: true }
 );
 
 const voteSchema = new mongoose.Schema(

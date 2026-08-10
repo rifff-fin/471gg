@@ -5,8 +5,20 @@ import { io } from "socket.io-client";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../components/IssueCard";
+import PrivateChat from "../components/PrivateChat";
 
 const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:1141";
+
+const CommentThread = ({ item, complaintId, canReply, onRefresh }) => {
+  const [reply, setReply] = useState("");
+  const submitReply = async (event) => {
+    event.preventDefault();
+    if (!reply.trim()) return;
+    await api.post(`/complaints/${complaintId}/comments/${item._id}/replies`, { body: reply.trim() });
+    setReply(""); onRefresh();
+  };
+  return <article className="comment"><div className="comment-avatar">{item.authorName?.charAt(0)?.toUpperCase() || "E"}</div><div className="comment-body"><Link to={`/profiles/${item.authorId}`}><strong>{item.authorName}</strong></Link><span>{item.authorRole} · {item.createdAt ? formatDate(item.createdAt) : "Just now"}</span><p>{item.body}</p>{(item.replies || []).map((replyItem) => <div className="comment-reply" key={replyItem._id}><Link to={`/profiles/${replyItem.authorId}`}><strong>{replyItem.authorName}</strong></Link><span>{replyItem.authorRole}</span><p>{replyItem.body}</p></div>)}{canReply && <form className="reply-form" onSubmit={submitReply}><input value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Reply to this comment" /><button disabled={!reply.trim()}>Reply</button></form>}</div></article>;
+};
 
 const ComplaintDetail = () => {
   const { id } = useParams();
@@ -62,6 +74,8 @@ const ComplaintDetail = () => {
 
   if (loading) return <main className="site-shell"><div className="empty-card">Loading issue…</div></main>;
   if (!complaint) return <main className="site-shell"><Link className="back-link" to="/"><FaArrowLeft /> Back to reports</Link><div className="empty-card">{notice}</div></main>;
+  const ownerId = complaint.createdBy?._id || complaint.createdBy;
+  const privateChatAllowed = user && (String(ownerId) === String(user._id || user.id) || ["officer", "field_worker", "councillor", "mayor", "admin"].includes(user.role));
 
   return <main className="site-shell detail-page">
     <Link className="back-link" to="/"><FaArrowLeft /> All community reports</Link>
@@ -82,8 +96,9 @@ const ComplaintDetail = () => {
     </div>
     <section className="discussion"><div className="section-heading"><div><p className="eyebrow">Conversation</p><h2><FaComment /> Public updates</h2></div><span>{complaint.comments?.length || 0} posts</span></div>
       {user ? <form className="comment-form" onSubmit={postComment}><textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Share a useful update with your community…" disabled={saving} rows="4" /><button className="button button--primary" disabled={saving || !comment.trim()}><FaPaperPlane /> Post update</button></form> : <div className="sign-in-prompt">Want to add a public update? <Link to="/login">Sign in to join the conversation.</Link></div>}
-      <div className="comment-list">{complaint.comments?.length ? complaint.comments.slice().reverse().map((item, index) => <article className="comment" key={`${item.createdAt}-${index}`}><div className="comment-avatar">{item.authorName?.charAt(0)?.toUpperCase() || "E"}</div><div><strong>{item.authorName}</strong><span>{item.authorRole} · {item.createdAt ? formatDate(item.createdAt) : "Just now"}</span><p>{item.body}</p></div></article>) : <div className="empty-card">No public updates yet. Add the first useful update.</div>}</div>
+      <div className="comment-list">{complaint.comments?.length ? complaint.comments.slice().reverse().map((item, index) => <CommentThread key={`${item.createdAt}-${index}`} item={item} complaintId={id} canReply={Boolean(user)} onRefresh={load} />) : <div className="empty-card">No public updates yet. Add the first useful update.</div>}</div>
     </section>
+    {privateChatAllowed && <PrivateChat complaintId={id} />}
   </main>;
 };
 export default ComplaintDetail;

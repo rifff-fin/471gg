@@ -5,6 +5,8 @@ const {
   register,
   login,
   getMe,
+  getProfile,
+  updateProfile,
 } = require("../controllers/authController");
 
 const {
@@ -18,5 +20,7 @@ router.post("/login", login);
 
 // Protected route
 router.get("/me", protect, getMe);
+router.put("/me", protect, updateProfile);
+router.get("/users/:id", getProfile);
 
 module.exports = router;

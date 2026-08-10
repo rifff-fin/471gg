@@ -1,4 +1,5 @@
 const Complaint = require("../models/Complaint");
+const User = require("../models/User");
 const { uploadBuffer } = require("../services/cloudinary");
 const { calculateComplaintPriority, getPriorityLabel } = require("../services/priority");
 const { emitComplaintEvent, emitAdminAlert } = require("../services/realtime");
@@ -16,6 +17,11 @@ const departmentByCategory = {
 };
 
 const routeDepartment = (category) => departmentByCategory[category] || "Citizen Services";
+const authorityRoles = new Set(["officer", "field_worker", "councillor", "mayor", "admin"]);
+const canAccessPrivateChat = (complaint, user) => {
+  const ownerId = complaint.createdBy?._id || complaint.createdBy;
+  return String(ownerId) === String(user?.id) || authorityRoles.has(user?.role);
+};
 
 const isTerminalStatus = (status = "") => ["Resolved", "Closed"].includes(status);
 
@@ -276,7 +282,7 @@ const getMyComplaints = async (req, res) => {
 
 const getComplaintById = async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id);
+    const complaint = await Complaint.findById(req.params.id).populate("createdBy", "name role avatar bio ward");
     if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
     res.status(200).json({ success: true, data: complaint });
   } catch (error) {
@@ -505,6 +511,7 @@ const addComplaintComment = async (req, res) => {
     if (!body) return res.status(400).json({ success: false, message: "Comment text is required" });
 
     const comment = {
+      authorId: req.user.id,
       authorName: req.user?.name || "Verified citizen",
       authorRole: req.user?.role || "citizen",
       body,
@@ -575,15 +582,19 @@ const addChatMessage = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!canAccessPrivateChat(complaint, req.user)) {
+      return res.status(403).json({ success: false, message: "Only the reporter and authorized municipal staff can use this private conversation." });
+    }
 
     const body = req.body.body?.trim();
     if (!body) return res.status(400).json({ success: false, message: "Message text is required" });
 
     const message = {
-      authorName: req.user?.name || "Municipal staff",
-      authorRole: req.user?.role || "officer",
+      authorId: req.user.id,
+      authorName: req.user?.name || "Verified user",
+      authorRole: req.user?.role || "citizen",
       body,
-      channel: "internal",
+      channel: "private",
     };
 
     complaint.chatMessages.push(message);
@@ -605,8 +616,11 @@ const addChatMessage = async (req, res) => {
 
 const getChatMessages = async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id).select("chatMessages");
+    const complaint = await Complaint.findById(req.params.id).select("chatMessages createdBy");
     if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!canAccessPrivateChat(complaint, req.user)) {
+      return res.status(403).json({ success: false, message: "This is a private reporter-to-authority conversation." });
+    }
     res.status(200).json({ success: true, count: complaint.chatMessages.length, data: complaint.chatMessages });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -633,6 +647,31 @@ const getAdminStream = async (req, res) => {
   }
 };
 
+const replyToComment = async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    const body = req.body.body?.trim();
+    if (!body) return res.status(400).json({ success: false, message: "Reply text is required" });
+    const comment = complaint.comments.id(req.params.commentId);
+    if (!comment) return res.status(404).json({ success: false, message: "Comment not found or was created before replies were enabled" });
+
+    comment.replies.push({
+      authorId: req.user.id,
+      authorName: req.user?.name || "Verified user",
+      authorRole: req.user?.role || "citizen",
+      body,
+    });
+    const updatedComplaint = await complaint.save();
+    const savedComment = updatedComplaint.comments.id(req.params.commentId);
+    const reply = savedComment.replies[savedComment.replies.length - 1];
+    emitComplaintEvent("complaint:comment-replied", { complaintId: updatedComplaint._id, commentId: req.params.commentId, reply });
+    res.status(201).json({ success: true, message: "Reply posted successfully", data: reply });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createComplaint,
   getAllComplaints,
@@ -646,6 +685,7 @@ module.exports = {
   holdComplaint,
   releaseComplaint,
   addComplaintComment,
+  replyToComment,
   getComplaintComments,
   addCompletionReport,
   addChatMessage,
