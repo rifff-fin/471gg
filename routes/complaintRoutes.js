@@ -1,31 +1,131 @@
 const express = require("express");
+
 const router = express.Router();
 
+
 const {
+    protect
+} = require("../middleware/authMiddleware");
+
+
+
+const {
+
     createComplaint,
+
     getAllComplaints,
+
+    getMyComplaints,
+
     getComplaintById,
+
     updateComplaint,
+
     deleteComplaint,
-    getNearbyComplaints,
+
+    getNearbyComplaints
+
 } = require("../controllers/complaintController");
 
+
+
+
 // Create Complaint
-router.post("/", createComplaint);
+
+router.post(
+
+    "/",
+
+    protect,
+
+    createComplaint
+
+);
+
+
+
 
 // Get All Complaints
-router.get("/", getAllComplaints);
 
-// Nearby Complaints (keep this BEFORE "/:id")
-router.get("/nearby", getNearbyComplaints);
+router.get(
+
+    "/",
+
+    getAllComplaints
+
+);
+
+
+
+
+// Get My Complaints
+
+router.get(
+
+    "/my",
+
+    protect,
+
+    getMyComplaints
+
+);
+
+
+
+
+// Nearby Complaints
+
+router.get(
+
+    "/nearby",
+
+    getNearbyComplaints
+
+);
+
+
+
 
 // Get Single Complaint
-router.get("/:id", getComplaintById);
+
+router.get(
+
+    "/:id",
+
+    getComplaintById
+
+);
+
+
+
 
 // Update Complaint
-router.put("/:id", updateComplaint);
+
+router.put(
+
+    "/:id",
+
+    protect,
+
+    updateComplaint
+
+);
+
+
+
 
 // Delete Complaint
-router.delete("/:id", deleteComplaint);
+
+router.delete(
+
+    "/:id",
+
+    protect,
+
+    deleteComplaint
+
+);
+
+
 
 module.exports = router;
