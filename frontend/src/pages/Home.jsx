@@ -45,7 +45,7 @@ const sortComplaints = (items) => {
   });
 };
 
-const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:1321";
+const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:1141";
 
 const Home = () => {
   const { user } = useAuth();
@@ -65,10 +65,17 @@ const Home = () => {
   const [reportNote, setReportNote] = useState("");
   const [beforeFiles, setBeforeFiles] = useState([]);
   const [afterFiles, setAfterFiles] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [optimisticUpvotes, setOptimisticUpvotes] = useState({});
   const [heatmapHotspots, setHeatmapHotspots] = useState([]);
   const [slaBreaches, setSlaBreaches] = useState([]);
   const [streamThreshold, setStreamThreshold] = useState(24);
+
+  const complaintStatuses = ["Pending", "In Progress", "Resolved", "Closed", "Held Pending"];
 
   const selectedComplaint = useMemo(() => {
     if (!complaints.length) {
@@ -124,11 +131,23 @@ const Home = () => {
     return complaint;
   };
 
+  const buildComplaintQuery = () => {
+    const params = {};
+    if (categoryFilter) params.category = categoryFilter;
+    if (statusFilter) params.status = statusFilter;
+    if (dateFrom) params.fromDate = dateFrom;
+    if (dateTo) params.toDate = dateTo;
+    if (searchQuery) params.search = searchQuery;
+    return params;
+  };
+
   const loadComplaints = async () => {
     setLoading(true);
 
     try {
-      const response = await api.get("/complaints");
+      const response = await api.get("/complaints", {
+        params: buildComplaintQuery(),
+      });
       const items = sortComplaints(response.data.data || []);
 
       setComplaints(items);
@@ -138,6 +157,26 @@ const Home = () => {
       }
     } catch (error) {
       setStatusMessage(error.response?.data?.message || error.message || "Failed to load complaints.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetFilters = async () => {
+    setSearchQuery("");
+    setCategoryFilter("");
+    setStatusFilter("");
+    setDateFrom("");
+    setDateTo("");
+    setLoading(true);
+
+    try {
+      const response = await api.get("/complaints");
+      const items = sortComplaints(response.data.data || []);
+      setComplaints(items);
+      setStatusMessage("Filters reset.");
+    } catch (error) {
+      setStatusMessage(error.response?.data?.message || error.message || "Failed to reset filters.");
     } finally {
       setLoading(false);
     }
@@ -548,6 +587,71 @@ const Home = () => {
             </button>
             <span className="status-chip">Socket connected to {socketUrl}</span>
           </div>
+
+          <div className="filter-panel">
+            <div className="filter-row">
+              <label className="field filter-field">
+                <span>Search</span>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search title, description, or ward"
+                />
+              </label>
+
+              <label className="field filter-field">
+                <span>Category</span>
+                <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+                  <option value="">All categories</option>
+                  {complaintCategories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field filter-field">
+                <span>Status</span>
+                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                  <option value="">All statuses</option>
+                  {complaintStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field filter-field">
+                <span>From</span>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(event) => setDateFrom(event.target.value)}
+                />
+              </label>
+
+              <label className="field filter-field">
+                <span>To</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(event) => setDateTo(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="filter-actions">
+              <button className="secondary-btn" type="button" onClick={loadComplaints} disabled={saving}>
+                Apply filters
+              </button>
+              <button className="ghost-btn" type="button" onClick={resetFilters} disabled={saving}>
+                Reset filters
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="stats-grid">
@@ -903,6 +1007,7 @@ const Home = () => {
                       <strong>{comment.authorName}</strong>
                     </div>
                     <p>{comment.body}</p>
+                  </article>
                   ))}
                 </div>
               </div>

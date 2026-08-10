@@ -9,6 +9,8 @@ const generateToken = (user) => {
     {
       id: user._id,
       role: user.role,
+      name: user.name,
+      email: user.email,
     },
     JWT_SECRET,
     {

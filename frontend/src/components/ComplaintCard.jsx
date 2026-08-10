@@ -1,4 +1,3 @@
-import { FaTrashAlt, FaPencilAlt, FaArrowUp, FaArrowDown } from "react-icons/fa";
 import { useNavigate } from "react-router";
 
 

@@ -26,7 +26,10 @@ app.set("io", io);
 registerSocketHandlers(io);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_ORIGIN || true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -45,6 +48,14 @@ app.use("/api/auth", authRoutes);
 // Complaint Routes
 const complaintRoutes = require("./routes/complaintRoutes");
 app.use("/api/complaints", complaintRoutes);
+
+app.use((error, req, res, next) => {
+  if (error?.name === "MulterError") {
+    return res.status(400).json({ success: false, message: "Upload rejected: images only, up to 8 files, 12 MB each." });
+  }
+
+  return next(error);
+});
 
 // Port
 const PORT = process.env.PORT || 1321;

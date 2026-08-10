@@ -6,6 +6,17 @@ const { emitComplaintEvent, emitAdminAlert } = require("../services/realtime");
 const SLA_THRESHOLD_HOURS = Number(process.env.SLA_THRESHOLD_HOURS || 24);
 const HEATMAP_PRIORITY_THRESHOLD = Number(process.env.HEATMAP_PRIORITY_THRESHOLD || 60);
 
+const departmentByCategory = {
+  "Road & Infrastructure": "Public Works",
+  "Waste Management": "Waste Management",
+  "Water Supply": "Water Supply",
+  Electricity: "Electrical Services",
+  "Public Safety": "Public Safety",
+  Sanitation: "Sanitation",
+};
+
+const routeDepartment = (category) => departmentByCategory[category] || "Citizen Services";
+
 const isTerminalStatus = (status = "") => ["Resolved", "Closed"].includes(status);
 
 const getComplaintAgeHours = (complaint = {}) => {
@@ -118,23 +129,28 @@ const parseMaybeJson = (value) => {
 };
 
 const normalizeLocation = (body = {}) => {
-  const lat = Number(body.latitude ?? body.lat ?? body.locationLat ?? body.location?.lat);
-  const lng = Number(body.longitude ?? body.lng ?? body.locationLng ?? body.location?.lng);
+  const rawLat = body.latitude ?? body.lat ?? body.locationLat ?? body.location?.lat;
+  const rawLng = body.longitude ?? body.lng ?? body.locationLng ?? body.location?.lng;
+  const lat = Number(rawLat);
+  const lng = Number(rawLng);
 
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+  if (rawLat !== "" && rawLng !== "" && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
     return { type: "Point", coordinates: [lng, lat] };
   }
 
   const parsedLocation = parseMaybeJson(body.location);
-  if (parsedLocation && parsedLocation.type === "Point" && Array.isArray(parsedLocation.coordinates)) {
-    return { type: "Point", coordinates: parsedLocation.coordinates.map(Number) };
+  if (parsedLocation && parsedLocation.type === "Point" && Array.isArray(parsedLocation.coordinates) && parsedLocation.coordinates.length === 2) {
+    const [parsedLng, parsedLat] = parsedLocation.coordinates.map(Number);
+    if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng) && Math.abs(parsedLat) <= 90 && Math.abs(parsedLng) <= 180) {
+      return { type: "Point", coordinates: [parsedLng, parsedLat] };
+    }
   }
 
   return null;
 };
 
 const getSupporterKey = (req, complaintId) => {
-  return req.user?.id || req.body.supporterId || req.body.supporterEmail || req.headers["x-supporter-id"] || req.ip || `${complaintId}-anonymous`;
+  return req.user?.id || `${complaintId}-anonymous`;
 };
 
 const toMediaList = async (files = [], stage = "complaint") => {
@@ -186,7 +202,7 @@ const createComplaint = async (req, res) => {
       category: req.body.category || "General",
       description,
       ward: req.body.ward || "",
-      department: req.body.department || "Pending",
+      department: routeDepartment(req.body.category || "General"),
       status: req.body.status || "Pending",
       priorityLevel: req.body.priorityLevel || "Medium",
       severityCoefficient: Number(req.body.severityCoefficient || 1),
@@ -220,6 +236,27 @@ const getAllComplaints = async (req, res) => {
     if (req.query.category) query.category = req.query.category;
     if (req.query.status) query.status = req.query.status;
     if (req.query.ward) query.ward = req.query.ward;
+
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, "i");
+      query.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { ward: searchRegex },
+      ];
+    }
+
+    if (req.query.fromDate || req.query.toDate) {
+      query.createdAt = {};
+      if (req.query.fromDate) {
+        query.createdAt.$gte = new Date(req.query.fromDate);
+      }
+      if (req.query.toDate) {
+        const endDate = new Date(req.query.toDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDate;
+      }
+    }
 
     const complaints = await Complaint.find(query).sort({ priorityScore: -1, createdAt: -1 });
     res.status(200).json({ success: true, count: complaints.length, data: complaints });
@@ -335,10 +372,10 @@ const recordVote = async (complaint, type, req) => {
   complaint.supporters.push(supporterKey);
   complaint.votes.push({
     supporterKey,
-    supporterLabel: req.body.supporterLabel || req.user?.name || req.body.supporterEmail || "Anonymous",
-    supporterRole: req.body.supporterRole || req.user?.role || "citizen",
+    supporterLabel: req.user?.name || "Verified citizen",
+    supporterRole: req.user?.role || "citizen",
     voteType: type,
-    actor: req.body.actor || req.user?.name || "Citizen",
+    actor: req.user?.name || "Verified citizen",
   });
 
   if (type === "up") {
@@ -468,10 +505,10 @@ const addComplaintComment = async (req, res) => {
     if (!body) return res.status(400).json({ success: false, message: "Comment text is required" });
 
     const comment = {
-      authorName: req.body.authorName || req.user?.name || "Anonymous",
-      authorRole: req.body.authorRole || req.user?.role || "citizen",
+      authorName: req.user?.name || "Verified citizen",
+      authorRole: req.user?.role || "citizen",
       body,
-      channel: req.body.channel === "internal" ? "internal" : "public",
+      channel: "public",
     };
 
     complaint.comments.push(comment);
@@ -510,7 +547,7 @@ const addCompletionReport = async (req, res) => {
     const afterImages = await toMediaList(req.files?.afterImages || [], "after");
     const report = {
       note: req.body.note || "",
-      submittedBy: req.body.submittedBy || req.user?.name || "Field Worker",
+      submittedBy: req.user?.name || "Field Worker",
       beforeImages,
       afterImages,
     };
@@ -543,10 +580,10 @@ const addChatMessage = async (req, res) => {
     if (!body) return res.status(400).json({ success: false, message: "Message text is required" });
 
     const message = {
-      authorName: req.body.authorName || req.user?.name || "Anonymous",
-      authorRole: req.body.authorRole || req.user?.role || "citizen",
+      authorName: req.user?.name || "Municipal staff",
+      authorRole: req.user?.role || "officer",
       body,
-      channel: req.body.channel === "internal" ? "internal" : "public",
+      channel: "internal",
     };
 
     complaint.chatMessages.push(message);
@@ -604,6 +641,7 @@ module.exports = {
   updateComplaint,
   deleteComplaint,
   getNearbyComplaints,
+  voteComplaint,
   upvoteComplaint,
   holdComplaint,
   releaseComplaint,
