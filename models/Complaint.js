@@ -1,60 +1,67 @@
 const mongoose = require("mongoose");
 
 const complaintSchema = new mongoose.Schema(
-{
-    citizenName:{
-        type:String,
-        required:true
+  {
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
 
-    citizenEmail:{
-        type:String,
-        required:true
+    citizenName: {
+      type: String,
+      required: true,
     },
 
-    title:{
-        type:String,
-        required:true
+    citizenEmail: {
+      type: String,
+      required: true,
     },
 
-    description:{
-        type:String,
-        required:true
+    title: {
+      type: String,
+      required: true,
     },
 
-    department:{
-        type:String,
-        default:"Pending"
+    description: {
+      type: String,
+      required: true,
     },
 
-    status:{
-        type:String,
-        default:"Pending"
+    department: {
+      type: String,
+      default: "Pending",
     },
 
-    assigned:{
-        type:Boolean,
-        default:false
+    status: {
+      type: String,
+      default: "Pending",
     },
 
-    location:{
-        type:{
-            type:String,
-            enum:["Point"],
-            default:"Point"
-        },
+    assigned: {
+      type: Boolean,
+      default: false,
+    },
 
-        coordinates:{
-            type:[Number],
-            required:true
-        }
-    }
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
 
-},
-{
-    timestamps:true
-});
+      coordinates: {
+        type: [Number],
+        required: true,
+      },
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-complaintSchema.index({location:"2dsphere"});
+complaintSchema.index({ location: "2dsphere" });
 
-module.exports = mongoose.model("Complaint",complaintSchema);
+module.exports = mongoose.model("Complaint", complaintSchema);
