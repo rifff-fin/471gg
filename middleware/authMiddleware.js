@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 
+const JWT_SECRET = process.env.JWT_SECRET || "ekotro-dev-secret";
+
 // ========================================
 // Authentication Middleware
 // Verifies JWT and attaches decoded user
@@ -30,7 +32,7 @@ const protect = (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET
+      JWT_SECRET
     );
 
     // Attach decoded user data to request
