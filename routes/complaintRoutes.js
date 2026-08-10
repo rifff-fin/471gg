@@ -4,7 +4,8 @@ const router = express.Router();
 
 
 const {
-    protect
+    protect,
+    authorize
 } = require("../middleware/authMiddleware");
 
 
@@ -30,7 +31,9 @@ const {
 
 
 
-// Create Complaint
+
+// ================= CREATE COMPLAINT =================
+// Citizen creates complaint
 
 router.post(
 
@@ -45,7 +48,9 @@ router.post(
 
 
 
-// Get All Complaints
+
+// ================= PUBLIC COMPLAINTS =================
+// Anyone can view public complaints
 
 router.get(
 
@@ -58,7 +63,31 @@ router.get(
 
 
 
-// Get My Complaints
+
+// ================= OFFICER DASHBOARD =================
+// Officer/Admin can view all complaints
+
+router.get(
+
+    "/all",
+
+    protect,
+
+    authorize(
+        "officer",
+        "admin"
+    ),
+
+    getAllComplaints
+
+);
+
+
+
+
+
+// ================= MY COMPLAINTS =================
+// Citizen views own complaints
 
 router.get(
 
@@ -73,7 +102,8 @@ router.get(
 
 
 
-// Nearby Complaints
+
+// ================= NEARBY COMPLAINTS =================
 
 router.get(
 
@@ -86,7 +116,8 @@ router.get(
 
 
 
-// Get Single Complaint
+
+// ================= SINGLE COMPLAINT =================
 
 router.get(
 
@@ -99,7 +130,8 @@ router.get(
 
 
 
-// Update Complaint
+
+// ================= UPDATE COMPLAINT =================
 
 router.put(
 
@@ -114,7 +146,8 @@ router.put(
 
 
 
-// Delete Complaint
+
+// ================= DELETE COMPLAINT =================
 
 router.delete(
 
@@ -125,6 +158,8 @@ router.delete(
     deleteComplaint
 
 );
+
+
 
 
 

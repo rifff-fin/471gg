@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
 
-
   const { user, logout } = useAuth();
 
   const navigate = useNavigate();
@@ -44,6 +43,7 @@ const Navbar = () => {
 
           <>
 
+
             <span>
               Hello, {user.name}
             </span>
@@ -56,21 +56,56 @@ const Navbar = () => {
 
 
 
-            <Link to="/create-complaint">
-              Create Complaint
-            </Link>
+            {
+              user.role === "citizen" && (
+
+                <>
+
+                  <Link to="/create-complaint">
+                    Create Complaint
+                  </Link>
+
+
+                  <Link to="/my-complaints">
+                    My Complaints
+                  </Link>
+
+
+                  <Link to="/complaint-map">
+                    Complaint Map
+                  </Link>
+
+                </>
+
+              )
+            }
 
 
 
-            <Link to="/my-complaints">
-              My Complaints
-            </Link>
+
+            {
+              user.role === "officer" && (
+
+                <Link to="/officer-dashboard">
+                  Officer Dashboard
+                </Link>
+
+              )
+            }
 
 
 
-            <Link to="/complaint-map">
-              Complaint Map
-            </Link>
+
+            {
+              user.role === "admin" && (
+
+                <Link to="/admin-dashboard">
+                  Admin Dashboard
+                </Link>
+
+              )
+            }
+
 
 
 
@@ -93,6 +128,7 @@ const Navbar = () => {
         ) : (
 
           <>
+
 
             <Link to="/login">
               Login

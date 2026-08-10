@@ -1,18 +1,26 @@
 import { Navigate, Route, Routes } from "react-router";
 
+
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
+
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
+
 
 import CreateComplaint from "./pages/CreateComplaint";
 import MyComplaints from "./pages/MyComplaints";
 import EditComplaint from "./pages/EditComplaint";
 import ComplaintMap from "./pages/ComplaintMap";
 
+
+import OfficerDashboard from "./pages/OfficerDashboard";
+
+
 import { useAuth } from "./context/AuthContext";
+
 
 
 function App() {
@@ -24,7 +32,11 @@ function App() {
 
   if (loading) {
 
-    return <div>Loading Ekkotro...</div>;
+    return (
+      <div>
+        Loading Ekkotro...
+      </div>
+    );
 
   }
 
@@ -36,6 +48,7 @@ function App() {
 
 
       <Navbar />
+
 
 
       <Routes>
@@ -147,6 +160,27 @@ function App() {
 
 
 
+        {/* Officer Dashboard */}
+
+        <Route
+
+          path="/officer-dashboard"
+
+          element={
+
+            <ProtectedRoute>
+
+              <OfficerDashboard />
+
+            </ProtectedRoute>
+
+          }
+
+        />
+
+
+
+
         {/* Login */}
 
         <Route
@@ -212,6 +246,7 @@ function App() {
         />
 
 
+
       </Routes>
 
 
@@ -220,6 +255,7 @@ function App() {
   );
 
 }
+
 
 
 export default App;
