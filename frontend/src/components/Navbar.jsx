@@ -19,9 +19,8 @@ const Navbar = () => {
       <div className="nav-links">
         {user ? (
           <>
+            <Link to="/">Board</Link>
             <span>Hello, {user.name}</span>
-
-            <Link to="/">Home</Link>
 
             <button onClick={handleLogout} className="logout-btn">
               Logout
