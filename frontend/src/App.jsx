@@ -10,6 +10,7 @@ import MyComplaints from "./pages/MyComplaints";
 import Register from "./pages/Register";
 import ReportIssue from "./pages/ReportIssue";
 import Profile from "./pages/Profile";
+import ComplaintMap from "./pages/ComplaintMap";
 import { useAuth } from "./context/AuthContext";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
     <Route path="/edit-complaint/:id" element={<ProtectedRoute><EditComplaint /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
     <Route path="/profiles/:id" element={<Profile />} />
+    <Route path="/map" element={<ComplaintMap />} />
     <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
     <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
     <Route path="*" element={<Navigate to="/" replace />} />

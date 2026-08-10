@@ -8,6 +8,7 @@ import {
 } from "react-leaflet";
 
 import api from "../services/api";
+import "leaflet/dist/leaflet.css";
 
 
 

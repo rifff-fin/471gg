@@ -6,6 +6,7 @@ import {
 } from "react-leaflet";
 
 import { useState } from "react";
+import "leaflet/dist/leaflet.css";
 
 
 const defaultPosition = [
