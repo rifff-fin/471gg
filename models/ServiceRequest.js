@@ -34,6 +34,8 @@ const serviceRequestSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    electronicSignature: { type: String, default: "" },
+    reviewedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

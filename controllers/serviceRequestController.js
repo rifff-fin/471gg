@@ -1,4 +1,5 @@
 const ServiceRequest = require("../models/ServiceRequest");
+const Notification = require("../models/Notification");
 
 // Citizen create request
 
@@ -67,22 +68,33 @@ const getMyServiceRequests = async (req, res) => {
 const updateServiceRequest = async (req, res) => {
   try {
     const { status, officerComment } = req.body;
-
-    const request = await ServiceRequest.findByIdAndUpdate(
-      req.params.id,
-
-      {
-        status,
-
-        officerComment,
-
-        reviewedBy: req.user.id,
-      },
-
-      {
-        new: true,
-      },
-    );
+    if (
+      !["Processing", "Approved", "Rejected", "Completed"].includes(status) ||
+      !officerComment?.trim()
+    )
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "A valid status and signed officer note are required.",
+        });
+    const request = await ServiceRequest.findById(req.params.id);
+    if (!request)
+      return res
+        .status(404)
+        .json({ success: false, message: "Service request not found." });
+    request.status = status;
+    request.officerComment = officerComment.trim();
+    request.reviewedBy = req.user.id;
+    request.reviewedAt = new Date();
+    request.electronicSignature = `${req.user.name} · Municipal Officer · ${request.reviewedAt.toLocaleString("en-BD")}`;
+    await request.save();
+    await Notification.create({
+      user: request.citizen,
+      title: `Service request ${status}`,
+      message: `${req.user.name}: ${request.officerComment}`,
+      type: "case_update",
+    });
 
     res.json({
       success: true,
@@ -100,10 +112,23 @@ const updateServiceRequest = async (req, res) => {
   }
 };
 
+const getOfficerServiceRequests = async (req, res) => {
+  try {
+    const requests = await ServiceRequest.find()
+      .populate("citizen", "name email")
+      .populate("reviewedBy", "name")
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: requests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createServiceRequest,
 
   getMyServiceRequests,
 
   updateServiceRequest,
+  getOfficerServiceRequests,
 };

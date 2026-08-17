@@ -76,6 +76,21 @@ const reportSchema = new mongoose.Schema(
   { _id: false, timestamps: true },
 );
 
+const officerNoteSchema = new mongoose.Schema(
+  {
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    authorName: { type: String, required: true },
+    action: { type: String, required: true },
+    body: { type: String, required: true, trim: true, maxlength: 1500 },
+    signature: { type: String, required: true },
+  },
+  { timestamps: true },
+);
+
 const complaintSchema = new mongoose.Schema(
   {
     createdBy: {
@@ -93,10 +108,22 @@ const complaintSchema = new mongoose.Schema(
     department: { type: String, default: "Pending" },
     status: {
       type: String,
-      enum: ["Pending", "In Progress", "Resolved", "Closed", "Held Pending"],
+      enum: [
+        "Pending",
+        "In Progress",
+        "Resolved",
+        "Closed",
+        "Held Pending",
+        "Rejected",
+      ],
       default: "Pending",
     },
     assigned: { type: Boolean, default: false },
+    assignedOfficer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     holdState: {
       type: String,
       enum: ["ACTIVE", "HELD_PENDING", "RELEASED"],
@@ -119,6 +146,7 @@ const complaintSchema = new mongoose.Schema(
     comments: { type: [commentSchema], default: [] },
     chatMessages: { type: [commentSchema], default: [] },
     publicLedger: { type: [ledgerEntrySchema], default: [] },
+    officerNotes: { type: [officerNoteSchema], default: [] },
     location: {
       type: { type: String, enum: ["Point"], default: "Point" },
       coordinates: { type: [Number], required: true },

@@ -36,6 +36,9 @@ const Navbar = () => {
               </Link>
             )}
             {user.role === "police" && <Link to="/police">Police desk</Link>}
+            {["officer", "admin"].includes(user.role) && (
+              <Link to="/officer-dashboard">Officer desk</Link>
+            )}
             <Link to="/notifications">Notifications</Link>
             <span className="nav-greeting">
               {user.name} · {user.role || "citizen"}

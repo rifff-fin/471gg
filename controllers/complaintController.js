@@ -6,6 +6,8 @@ const {
   getPriorityLabel,
 } = require("../services/priority");
 const { emitComplaintEvent, emitAdminAlert } = require("../services/realtime");
+const { emitUserNotification } = require("../services/realtime");
+const Notification = require("../models/Notification");
 
 const SLA_THRESHOLD_HOURS = Number(process.env.SLA_THRESHOLD_HOURS || 24);
 const HEATMAP_PRIORITY_THRESHOLD = Number(
@@ -250,12 +252,10 @@ const createComplaint = async (req, res) => {
     const location = normalizeLocation(req.body);
 
     if (!title || !description || !location) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Title, description and location are required",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Title, description and location are required",
+      });
     }
 
     const attachments = await toMediaList(req.files || [], "complaint");
@@ -293,13 +293,11 @@ const createComplaint = async (req, res) => {
     });
     await publishAdminStream();
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Complaint created successfully",
-        data: complaint,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Complaint created successfully",
+      data: complaint,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -345,6 +343,112 @@ const getAllComplaints = async (req, res) => {
   }
 };
 
+const getOfficerComplaints = async (req, res) => {
+  try {
+    const query = {};
+    if (req.query.status) query.status = req.query.status;
+    if (req.query.search?.trim()) {
+      const search = new RegExp(req.query.search.trim(), "i");
+      query.$or = [
+        { title: search },
+        { description: search },
+        { citizenName: search },
+        { citizenEmail: search },
+        { ward: search },
+      ];
+    }
+    const complaints = await Complaint.find(query)
+      .populate("createdBy", "name email")
+      .populate("assignedOfficer", "name email")
+      .sort({ priorityScore: -1, comments: -1, createdAt: -1 });
+    res
+      .status(200)
+      .json({ success: true, count: complaints.length, data: complaints });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const reviewComplaintByOfficer = async (req, res) => {
+  try {
+    const { action, note } = req.body;
+    const actions = {
+      approve: "In Progress",
+      reject: "Rejected",
+      hold: "Held Pending",
+      resolve: "Resolved",
+      close: "Closed",
+      progress: "In Progress",
+    };
+    if (!actions[action])
+      return res
+        .status(400)
+        .json({ success: false, message: "Choose a valid officer action." });
+    if (!note?.trim())
+      return res.status(400).json({
+        success: false,
+        message: "A signed officer note is required for every decision.",
+      });
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found." });
+    const status = actions[action];
+    const signature = `${req.user.name} · Municipal Officer · ${new Date().toLocaleString("en-BD")}`;
+    complaint.status = status;
+    complaint.assigned = true;
+    complaint.assignedOfficer = req.user.id;
+    if (action === "hold") {
+      complaint.holdState = "HELD_PENDING";
+      complaint.holdReason = note.trim();
+    }
+    if (
+      ["approve", "progress", "resolve", "close", "reject"].includes(action)
+    ) {
+      complaint.holdState = "ACTIVE";
+      if (action !== "hold") complaint.holdReason = "";
+    }
+    complaint.officerNotes.push({
+      author: req.user.id,
+      authorName: req.user.name,
+      action,
+      body: note.trim(),
+      signature,
+    });
+    complaint.publicLedger.push({
+      action: `officer_${action}`,
+      message: note.trim(),
+      actor: req.user.name,
+      metadata: { status, signature },
+    });
+    const updated = await complaint.save();
+    await Notification.create({
+      user: complaint.createdBy,
+      title: `Your complaint is ${status}`,
+      message: `${req.user.name}: ${note.trim()}`,
+      type: "case_update",
+    });
+    emitUserNotification(complaint.createdBy, {
+      title: `Complaint ${status}`,
+      message: `${req.user.name}: ${note.trim()}`,
+      complaintId: String(complaint._id),
+    });
+    emitComplaintEvent("complaint:updated", {
+      complaintId: updated._id,
+      complaint: updated,
+    });
+    await publishAdminStream();
+    res.status(200).json({
+      success: true,
+      message: `Complaint marked ${status}.`,
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getMyComplaints = async (req, res) => {
   try {
     const complaints = await Complaint.find({ createdBy: req.user.id }).sort({
@@ -385,20 +489,16 @@ const updateComplaint = async (req, res) => {
       !complaint.createdBy ||
       complaint.createdBy.toString() !== req.user.id
     ) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "You can only update your own complaint",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "You can only update your own complaint",
+      });
     }
     if (complaint.assigned)
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Complaint already assigned. Update not allowed.",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Complaint already assigned. Update not allowed.",
+      });
 
     const allowedUpdates = [
       "title",
@@ -448,13 +548,11 @@ const updateComplaint = async (req, res) => {
     });
     await publishAdminStream();
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Complaint updated successfully",
-        data: updatedComplaint,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Complaint updated successfully",
+      data: updatedComplaint,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -471,20 +569,16 @@ const deleteComplaint = async (req, res) => {
       !complaint.createdBy ||
       complaint.createdBy.toString() !== req.user.id
     ) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "You can only delete your own complaint",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "You can only delete your own complaint",
+      });
     }
     if (complaint.assigned)
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Complaint already assigned. Delete not allowed.",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Complaint already assigned. Delete not allowed.",
+      });
 
     await complaint.deleteOne();
     emitComplaintEvent("complaint:deleted", { complaintId: req.params.id });
@@ -501,12 +595,10 @@ const getNearbyComplaints = async (req, res) => {
   try {
     const { lng, lat, distance } = req.query;
     if (!lng || !lat || !distance) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Longitude, latitude and distance are required",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Longitude, latitude and distance are required",
+      });
     }
 
     const complaints = await Complaint.find({
@@ -603,13 +695,11 @@ const voteComplaint = async (req, res) => {
     });
     await publishAdminStream();
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Vote recorded successfully",
-        data: updatedComplaint,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Vote recorded successfully",
+      data: updatedComplaint,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -629,13 +719,11 @@ const holdComplaint = async (req, res) => {
         .json({ success: false, message: "Complaint not found" });
     const reason = req.body.reason?.trim();
     if (!reason)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message:
-            "A written rationale is required to place a complaint on hold.",
-        });
+      return res.status(400).json({
+        success: false,
+        message:
+          "A written rationale is required to place a complaint on hold.",
+      });
 
     complaint.status = "Held Pending";
     complaint.holdState = "HELD_PENDING";
@@ -660,13 +748,11 @@ const holdComplaint = async (req, res) => {
     });
     await publishAdminStream();
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Complaint placed on hold successfully",
-        data: updatedComplaint,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Complaint placed on hold successfully",
+      data: updatedComplaint,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -697,13 +783,11 @@ const releaseComplaint = async (req, res) => {
     });
     await publishAdminStream();
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Complaint released successfully",
-        data: updatedComplaint,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Complaint released successfully",
+      data: updatedComplaint,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -745,13 +829,11 @@ const addComplaintComment = async (req, res) => {
       complaintId: updatedComplaint._id,
       comment: storedComment,
     });
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Comment added successfully",
-        data: storedComment,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Comment added successfully",
+      data: storedComment,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -766,13 +848,11 @@ const getComplaintComments = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Complaint not found" });
-    res
-      .status(200)
-      .json({
-        success: true,
-        count: complaint.comments.length,
-        data: complaint.comments,
-      });
+    res.status(200).json({
+      success: true,
+      count: complaint.comments.length,
+      data: complaint.comments,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -824,13 +904,11 @@ const addCompletionReport = async (req, res) => {
       message: updatedComplaint.title + " now has a completion report.",
     });
     await publishAdminStream();
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Completion report uploaded successfully",
-        data: report,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Completion report uploaded successfully",
+      data: report,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -844,13 +922,11 @@ const addChatMessage = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Complaint not found" });
     if (!canAccessPrivateChat(complaint, req.user)) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message:
-            "Only the reporter and authorized municipal staff can use this private conversation.",
-        });
+      return res.status(403).json({
+        success: false,
+        message:
+          "Only the reporter and authorized municipal staff can use this private conversation.",
+      });
     }
 
     const body = req.body.body?.trim();
@@ -882,13 +958,11 @@ const addChatMessage = async (req, res) => {
       complaintId: updatedComplaint._id,
       message: storedMessage,
     });
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Message posted successfully",
-        data: storedMessage,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Message posted successfully",
+      data: storedMessage,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -904,20 +978,16 @@ const getChatMessages = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Complaint not found" });
     if (!canAccessPrivateChat(complaint, req.user)) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "This is a private reporter-to-authority conversation.",
-        });
-    }
-    res
-      .status(200)
-      .json({
-        success: true,
-        count: complaint.chatMessages.length,
-        data: complaint.chatMessages,
+      return res.status(403).json({
+        success: false,
+        message: "This is a private reporter-to-authority conversation.",
       });
+    }
+    res.status(200).json({
+      success: true,
+      count: complaint.chatMessages.length,
+      data: complaint.chatMessages,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -932,18 +1002,16 @@ const getComplaintLedger = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Complaint not found" });
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: {
-          priorityScore: complaint.priorityScore,
-          upvotes: complaint.upvotes,
-          holdState: complaint.holdState,
-          status: complaint.status,
-          ledger: complaint.publicLedger,
-        },
-      });
+    res.status(200).json({
+      success: true,
+      data: {
+        priorityScore: complaint.priorityScore,
+        upvotes: complaint.upvotes,
+        holdState: complaint.holdState,
+        status: complaint.status,
+        ledger: complaint.publicLedger,
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -975,13 +1043,10 @@ const replyToComment = async (req, res) => {
         .json({ success: false, message: "Reply text is required" });
     const comment = complaint.comments.id(req.params.commentId);
     if (!comment)
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message:
-            "Comment not found or was created before replies were enabled",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found or was created before replies were enabled",
+      });
 
     comment.replies.push({
       authorId: req.user.id,
@@ -997,13 +1062,11 @@ const replyToComment = async (req, res) => {
       commentId: req.params.commentId,
       reply,
     });
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Reply posted successfully",
-        data: reply,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Reply posted successfully",
+      data: reply,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1012,6 +1075,8 @@ const replyToComment = async (req, res) => {
 module.exports = {
   createComplaint,
   getAllComplaints,
+  getOfficerComplaints,
+  reviewComplaintByOfficer,
   getMyComplaints,
   getComplaintById,
   updateComplaint,

@@ -79,6 +79,8 @@ const ComplaintDetail = () => {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [showAllActivity, setShowAllActivity] = useState(false);
+  const [officerAction, setOfficerAction] = useState("approve");
+  const [officerNote, setOfficerNote] = useState("");
   const load = async () => {
     try {
       const response = await api.get(`/complaints/${id}`);
@@ -139,6 +141,26 @@ const ComplaintDetail = () => {
       setComment("");
     } catch (error) {
       setNotice(error.response?.data?.message || "Could not post this update.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const submitOfficerDecision = async (event) => {
+    event.preventDefault();
+    if (!officerNote.trim()) return;
+    setSaving(true);
+    try {
+      const response = await api.post(`/complaints/${id}/review`, {
+        action: officerAction,
+        note: officerNote.trim(),
+      });
+      setComplaint(response.data.data);
+      setOfficerNote("");
+      setNotice("Signed decision saved and the citizen was notified.");
+    } catch (error) {
+      setNotice(
+        error.response?.data?.message || "Could not save the officer decision.",
+      );
     } finally {
       setSaving(false);
     }
@@ -261,6 +283,35 @@ const ComplaintDetail = () => {
               </div>
             </dl>
           </div>
+          {["officer", "admin"].includes(user?.role) && (
+            <form
+              className="facts-card officer-case-actions"
+              onSubmit={submitOfficerDecision}
+            >
+              <h2>Officer decision</h2>
+              <select
+                value={officerAction}
+                onChange={(event) => setOfficerAction(event.target.value)}
+              >
+                <option value="approve">Approve & start work</option>
+                <option value="progress">Progress update</option>
+                <option value="hold">Hold pending</option>
+                <option value="reject">Reject</option>
+                <option value="resolve">Resolve</option>
+                <option value="close">Close</option>
+              </select>
+              <textarea
+                required
+                value={officerNote}
+                onChange={(event) => setOfficerNote(event.target.value)}
+                placeholder="Signed public note: explain the decision or next step…"
+                rows="5"
+              />
+              <button className="button button--primary" disabled={saving}>
+                Save and notify citizen
+              </button>
+            </form>
+          )}
         </aside>
       </div>
       <section className="discussion">

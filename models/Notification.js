@@ -24,7 +24,7 @@ const notificationSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["fine", "official_post"],
+      enum: ["fine", "official_post", "case_update"],
       default: "fine",
     },
 

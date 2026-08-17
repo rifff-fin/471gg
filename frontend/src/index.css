@@ -14,6 +14,174 @@
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
 
+.officer-page {
+  padding: 36px 0 72px;
+}
+.officer-page__hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: end;
+  padding: 30px;
+  border-radius: 16px;
+  color: #fff;
+  background: #123f36;
+}
+.officer-page__hero h1 {
+  font-family: Georgia, serif;
+  font-size: 40px;
+  letter-spacing: -0.04em;
+}
+.officer-page__hero p {
+  margin-top: 10px;
+  color: #d8e7df;
+  max-width: 600px;
+  line-height: 1.55;
+}
+.officer-page__hero > strong {
+  padding: 11px 14px;
+  border-radius: 999px;
+  background: #23584b;
+}
+.officer-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  gap: 20px;
+  margin-top: 22px;
+}
+.officer-panel {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.officer-panel h2 {
+  font-size: 20px;
+}
+.officer-filters,
+.officer-users form {
+  display: grid;
+  gap: 9px;
+  margin: 16px 0;
+}
+.officer-filters input,
+.officer-filters select,
+.officer-users input,
+.officer-decision select,
+.officer-decision textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ink);
+  background: #fff;
+}
+.officer-case-list {
+  display: grid;
+  gap: 8px;
+  max-height: 580px;
+  overflow: auto;
+}
+.officer-case {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 13px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.officer-case:hover,
+.officer-case.is-selected {
+  border-color: var(--green);
+  background: #edf8f2;
+}
+.officer-case small {
+  color: #718078;
+}
+.officer-review__heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+.officer-review__heading p {
+  margin-top: 9px;
+  color: #5b6961;
+  line-height: 1.55;
+}
+.officer-review__heading a {
+  color: var(--green);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.officer-review dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 22px 0;
+}
+.officer-review dl div {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f2f6f3;
+}
+.officer-review dt {
+  color: #718078;
+  font-size: 11px;
+}
+.officer-review dd {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 750;
+}
+.officer-decision {
+  display: grid;
+  gap: 12px;
+}
+.officer-decision label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 750;
+}
+.officer-users {
+  margin-top: 20px;
+}
+.officer-users form {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+.officer-user {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.officer-user strong,
+.officer-user small {
+  display: block;
+}
+.officer-user small {
+  margin-top: 3px;
+  color: #718078;
+}
+.officer-case-actions {
+  display: grid;
+  gap: 10px;
+}
+.officer-case-actions select,
+.officer-case-actions textarea {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ink);
+  background: #fff;
+}
+
 .comment--official {
   background: #fffdf4;
   border-color: #e4d79e;

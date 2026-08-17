@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   createComplaint,
   getAllComplaints,
+  getOfficerComplaints,
+  reviewComplaintByOfficer,
   getMyComplaints,
   getComplaintById,
   updateComplaint,
@@ -27,6 +29,18 @@ const { protect, authorize } = require("../middleware/authMiddleware");
 router.get("/", getAllComplaints);
 router.get("/nearby", getNearbyComplaints);
 router.get("/my", protect, getMyComplaints);
+router.get(
+  "/officer/cases",
+  protect,
+  authorize("officer", "admin"),
+  getOfficerComplaints,
+);
+router.post(
+  "/:id/review",
+  protect,
+  authorize("officer", "admin"),
+  reviewComplaintByOfficer,
+);
 router.get("/admin/stream", protect, authorize("admin"), getAdminStream);
 router.post("/:id/upvote", protect, upvoteComplaint);
 router.post("/:id/vote", protect, voteComplaint);

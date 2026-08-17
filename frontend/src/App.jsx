@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import ComplaintMap from "./pages/ComplaintMap";
 import OfficialUpdates from "./pages/OfficialUpdates";
 import GovernmentServices from "./pages/GovernmentServices";
+import OfficerDashboard from "./pages/OfficerDashboard";
 import NotificationCenter from "./components/NotificationCenter";
 import CreateFine from "./pages/CreateFine";
 import MyIssuedFines from "./pages/MyIssuedFines";
@@ -67,6 +68,14 @@ function App() {
           />
           <Route path="/profiles/:id" element={<Profile />} />
           <Route path="/map" element={<ComplaintMap />} />
+          <Route
+            path="/officer-dashboard"
+            element={
+              <RoleProtectedRoute allowedRoles={["officer", "admin"]}>
+                <OfficerDashboard />
+              </RoleProtectedRoute>
+            }
+          />
           <Route
             path="/government-services"
             element={

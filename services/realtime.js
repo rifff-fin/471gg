@@ -13,6 +13,7 @@ const registerSocketHandlers = (io) => {
       try {
         const user = jwt.verify(token, JWT_SECRET);
         socket.join(`role:${user.role}`);
+        socket.join(`user:${user.id}`);
       } catch (error) {
         // Unauthenticated visitors can receive public complaint events only.
       }
@@ -57,9 +58,15 @@ const emitOfficialNotification = (payload = {}) => {
   ioInstance.emit("announcement:published", payload);
 };
 
+const emitUserNotification = (userId, payload = {}) => {
+  if (!ioInstance || !userId) return;
+  ioInstance.to(`user:${userId}`).emit("notification:new", payload);
+};
+
 module.exports = {
   registerSocketHandlers,
   emitComplaintEvent,
   emitAdminAlert,
   emitOfficialNotification,
+  emitUserNotification,
 };

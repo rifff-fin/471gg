@@ -8,6 +8,7 @@ const {
   getMyServiceRequests,
 
   updateServiceRequest,
+  getOfficerServiceRequests,
 } = require("../controllers/serviceRequestController");
 
 const {
@@ -47,9 +48,16 @@ router.patch(
 
   protect,
 
-  authorize("admin", "police"),
+  authorize("officer", "admin"),
 
   updateServiceRequest,
+);
+
+router.get(
+  "/officer",
+  protect,
+  authorize("officer", "admin"),
+  getOfficerServiceRequests,
 );
 
 module.exports = router;
