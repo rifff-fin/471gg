@@ -6,6 +6,7 @@ Implemented on riff:
 - Field-worker completion reports already exist in riff. Cloudinary uploads now require valid Cloudinary credentials and use automatic format/quality optimization for secure delivery; data-URL fallback was removed.
 - Member-3 official communication is now a Facebook-style civic post feed: mayors and councillors can share optional-headline announcements, progress updates, and complaint responses. Citizens can support and comment on posts.
 - Official posts appear before complaint reports. Every registered citizen receives a saved in-app notification and online citizen accounts receive a live Socket.io popup; officials can still post only within their jurisdiction.
+- Notification repair: unified frontend API and Socket.io defaults with the backend's configured port 1141, and mounted the real-time popup globally so it works on every signed-in citizen page.
 - Added seedable official accounts for Dhaka North, Dhaka South, and a Dhaka North councillor.
 
 Run official seed after MongoDB is configured:

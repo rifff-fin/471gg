@@ -12,6 +12,7 @@ import ReportIssue from "./pages/ReportIssue";
 import Profile from "./pages/Profile";
 import ComplaintMap from "./pages/ComplaintMap";
 import OfficialUpdates from "./pages/OfficialUpdates";
+import NotificationCenter from "./components/NotificationCenter";
 import CreateFine from "./pages/CreateFine";
 import MyIssuedFines from "./pages/MyIssuedFines";
 import Notifications from "./pages/Notifications";
@@ -26,6 +27,7 @@ function App() {
   return (
     <>
       <Navbar />
+      <NotificationCenter />
       <AppErrorBoundary>
         <Routes>
           <Route path="/" element={<Feed />} />

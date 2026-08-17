@@ -1767,6 +1767,22 @@ body {
   font-size: 22px;
   cursor: pointer;
 }
+
+.app-notification {
+  position: fixed;
+  top: 84px;
+  right: 24px;
+  left: auto;
+  width: min(420px, calc(100vw - 32px));
+  z-index: 50;
+}
+
+.app-notification a {
+  color: #075b45;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
 .comment-body {
   flex: 1;
 }

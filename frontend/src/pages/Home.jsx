@@ -7,7 +7,7 @@ import {
   FaUserShield,
 } from "react-icons/fa";
 import { io } from "socket.io-client";
-import api from "../services/api";
+import api, { SOCKET_URL } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 const complaintCategories = [
@@ -53,7 +53,7 @@ const sortComplaints = (items) => {
   });
 };
 
-const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:1141";
+const socketUrl = SOCKET_URL;
 
 const Home = () => {
   const { user } = useAuth();

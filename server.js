@@ -74,7 +74,7 @@ app.use((error, req, res, next) => {
 });
 
 // Port
-const PORT = process.env.PORT || 1321;
+const PORT = process.env.PORT || 1141;
 
 // Start Server
 httpServer.listen(PORT, () => {

@@ -8,13 +8,13 @@ import {
   FaPaperPlane,
 } from "react-icons/fa6";
 import { io } from "socket.io-client";
-import api from "../services/api";
+import api, { SOCKET_URL } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../components/IssueCard";
 import PrivateChat from "../components/PrivateChat";
 import ComplaintLocationMap from "../components/ComplaintLocationMap";
 
-const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:1141";
+const socketUrl = SOCKET_URL;
 const CommentThread = ({ item, complaintId, canReply, onRefresh }) => {
   const [reply, setReply] = useState("");
   const submitReply = async (event) => {

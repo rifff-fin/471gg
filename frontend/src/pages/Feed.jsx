@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { FaArrowRight, FaMagnifyingGlass, FaPlus } from "react-icons/fa6";
 import { io } from "socket.io-client";
-import api from "../services/api";
+import api, { SOCKET_URL } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import IssueCard from "../components/IssueCard";
 import OfficialAnnouncementList from "../components/OfficialAnnouncementList";
@@ -17,7 +17,7 @@ const categories = [
   "Sanitation",
   "Other",
 ];
-const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:1141";
+const socketUrl = SOCKET_URL;
 
 const Feed = () => {
   const [complaints, setComplaints] = useState([]);
@@ -28,7 +28,7 @@ const Feed = () => {
   const [status, setStatus] = useState("All statuses");
   const [votingId, setVotingId] = useState("");
   const [announcementKey, setAnnouncementKey] = useState(0);
-  const [officialNotice, setOfficialNotice] = useState("");
+  const officialNotice = "";
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -84,11 +84,6 @@ const Feed = () => {
     socket.on("complaint:commented", addComment);
     socket.on("announcement:published", () =>
       setAnnouncementKey((value) => value + 1),
-    );
-    socket.on("official:announcement", (payload) =>
-      setOfficialNotice(
-        payload.message || "A new official update was published.",
-      ),
     );
     return () => socket.disconnect();
   }, []);
