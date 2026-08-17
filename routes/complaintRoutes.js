@@ -18,6 +18,7 @@ const {
   replyToComment,
   getComplaintComments,
   addCompletionReport,
+  verifyCompletionReport,
   addChatMessage,
   getChatMessages,
   getComplaintLedger,
@@ -71,6 +72,12 @@ router.post(
     { name: "afterImages", maxCount: 5 },
   ]),
   addCompletionReport,
+);
+router.post(
+  "/:id/reports/:reportId/verify",
+  protect,
+  authorize("officer", "admin"),
+  verifyCompletionReport,
 );
 
 router.post(

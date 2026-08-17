@@ -70,10 +70,27 @@ const reportSchema = new mongoose.Schema(
   {
     note: { type: String, default: "" },
     submittedBy: { type: String, default: "Field Worker" },
+    submittedById: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     beforeImages: { type: [mediaSchema], default: [] },
     afterImages: { type: [mediaSchema], default: [] },
+    verificationStatus: {
+      type: String,
+      enum: ["Submitted", "Verified", "Returned"],
+      default: "Submitted",
+    },
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    verifiedAt: { type: Date, default: null },
+    verificationNote: { type: String, default: "" },
   },
-  { _id: false, timestamps: true },
+  { timestamps: true },
 );
 
 const officerNoteSchema = new mongoose.Schema(

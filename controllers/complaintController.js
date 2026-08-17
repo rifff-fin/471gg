@@ -1,5 +1,6 @@
 const Complaint = require("../models/Complaint");
 const User = require("../models/User");
+const mongoose = require("mongoose");
 const { uploadBuffer } = require("../services/cloudinary");
 const {
   calculateComplaintPriority,
@@ -876,9 +877,16 @@ const addCompletionReport = async (req, res) => {
       req.files?.afterImages || [],
       "after",
     );
+    if (!beforeImages.length || !afterImages.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Upload at least one before image and one after image.",
+      });
+    }
     const report = {
       note: req.body.note || "",
       submittedBy: req.user?.name || "Field Worker",
+      submittedById: req.user?.id || null,
       beforeImages,
       afterImages,
     };
@@ -896,6 +904,33 @@ const addCompletionReport = async (req, res) => {
     });
 
     const updatedComplaint = await complaint.save();
+    const savedReport =
+      updatedComplaint.beforeAfterReports[
+        updatedComplaint.beforeAfterReports.length - 1
+      ];
+    const officerRecipients = mongoose.isValidObjectId(
+      updatedComplaint.assignedOfficer,
+    )
+      ? [updatedComplaint.assignedOfficer]
+      : (
+          await User.find({ role: { $in: ["officer", "admin"] } }).select("_id")
+        ).map((user) => user._id);
+    if (officerRecipients.length) {
+      const notification = {
+        title: "Field work ready for verification",
+        message: `${report.submittedBy} uploaded before-and-after evidence for “${updatedComplaint.title}”.`,
+        type: "case_update",
+      };
+      await Promise.all(
+        officerRecipients.map(async (user) => {
+          await Notification.create({ user, ...notification });
+          emitUserNotification(user, {
+            ...notification,
+            complaintId: String(updatedComplaint._id),
+          });
+        }),
+      );
+    }
     emitComplaintEvent("complaint:report-uploaded", {
       complaintId: updatedComplaint._id,
       complaint: updatedComplaint,
@@ -909,7 +944,93 @@ const addCompletionReport = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Completion report uploaded successfully",
-      data: report,
+      data: { complaint: updatedComplaint, report: savedReport },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const verifyCompletionReport = async (req, res) => {
+  try {
+    const action = req.body.action;
+    const note = req.body.note?.trim();
+    if (!["verify", "return"].includes(action) || !note) {
+      return res.status(400).json({
+        success: false,
+        message: "Choose verify or return and include a signed review note.",
+      });
+    }
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
+    const report = complaint.beforeAfterReports.id(req.params.reportId);
+    if (!report)
+      return res
+        .status(404)
+        .json({ success: false, message: "Completion report not found" });
+
+    const verified = action === "verify";
+    report.verificationStatus = verified ? "Verified" : "Returned";
+    report.verifiedBy = req.user.id;
+    report.verifiedAt = new Date();
+    report.verificationNote = note;
+    complaint.assigned = true;
+    complaint.assignedOfficer = req.user.id;
+    complaint.status = verified ? "Resolved" : "In Progress";
+    complaint.publicLedger.push({
+      action: verified
+        ? "completion_report_verified"
+        : "completion_report_returned",
+      message: note,
+      actor: req.user.name,
+      metadata: { reportId: String(report._id), status: complaint.status },
+    });
+    const updatedComplaint = await complaint.save();
+    const message = verified
+      ? `${req.user.name} verified the completed work for “${updatedComplaint.title}”.`
+      : `${req.user.name} returned the work report for “${updatedComplaint.title}”: ${note}`;
+    const recipients = [
+      report.submittedById,
+      updatedComplaint.createdBy,
+    ].filter(
+      (id, index, list) =>
+        mongoose.isValidObjectId(id) &&
+        list.findIndex((candidate) => String(candidate) === String(id)) ===
+          index,
+    );
+    await Promise.all(
+      recipients.map(async (user) => {
+        await Notification.create({
+          user,
+          title: verified
+            ? "Work marked complete"
+            : "Work report needs attention",
+          message,
+          type: "case_update",
+        });
+        emitUserNotification(user, {
+          title: verified
+            ? "Work marked complete"
+            : "Work report needs attention",
+          message,
+          complaintId: String(updatedComplaint._id),
+        });
+      }),
+    );
+    emitComplaintEvent("complaint:updated", {
+      complaintId: updatedComplaint._id,
+      complaint: updatedComplaint,
+    });
+    await publishAdminStream();
+    res.status(200).json({
+      success: true,
+      message: verified
+        ? "Work verified and case marked resolved."
+        : "Report returned to the field worker.",
+      data: updatedComplaint,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -1092,6 +1213,7 @@ module.exports = {
   replyToComment,
   getComplaintComments,
   addCompletionReport,
+  verifyCompletionReport,
   addChatMessage,
   getChatMessages,
   getComplaintLedger,

@@ -28,7 +28,6 @@ const Feed = () => {
   const [status, setStatus] = useState("All statuses");
   const [votingId, setVotingId] = useState("");
   const [announcementKey, setAnnouncementKey] = useState(0);
-  const officialNotice = "";
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -163,14 +162,6 @@ const Feed = () => {
         </div>
       </section>
 
-      {officialNotice && (
-        <div className="official-toast" role="status">
-          {officialNotice}
-          <button type="button" onClick={() => setOfficialNotice("")}>
-            ×
-          </button>
-        </div>
-      )}
       <OfficialAnnouncementList refreshKey={announcementKey} />
 
       <section id="issues" className="feed-layout">
@@ -248,7 +239,8 @@ const Feed = () => {
             </div>
           ) : (
             <div className="empty-card">
-              No reports match those filters. Be the first to report an issue.
+              No live reports match those filters. Citizen submissions will
+              appear here as they are reported.
             </div>
           )}
         </section>

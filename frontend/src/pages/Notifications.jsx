@@ -1,12 +1,25 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import { io } from "socket.io-client";
+import { SOCKET_URL } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
+  const { token } = useAuth();
 
   useEffect(() => {
     loadNotifications();
   }, []);
+
+  useEffect(() => {
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      auth: { token },
+    });
+    socket.on("notification:new", loadNotifications);
+    return () => socket.disconnect();
+  }, [token]);
 
   const loadNotifications = async () => {
     try {
@@ -18,6 +31,14 @@ const Notifications = () => {
     }
   };
 
+  const markRead = async (id) => {
+    await api.patch(`/notifications/${id}/read`);
+    setNotifications((items) =>
+      items.map((item) => (item._id === id ? { ...item, read: true } : item)),
+    );
+    window.dispatchEvent(new Event("notification:received"));
+  };
+
   return (
     <div className="page-container">
       <h1>Notifications</h1>
@@ -26,13 +47,18 @@ const Notifications = () => {
         <p>No notifications yet.</p>
       ) : (
         notifications.map((item) => (
-          <div key={item._id} className="fine-card">
+          <button
+            key={item._id}
+            type="button"
+            className={`fine-card notification-card ${item.read ? "" : "is-unread"}`}
+            onClick={() => markRead(item._id)}
+          >
             <h3>{item.title}</h3>
 
             <p>{item.message}</p>
 
             <small>{new Date(item.createdAt).toLocaleString()}</small>
-          </div>
+          </button>
         ))
       )}
     </div>

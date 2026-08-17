@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router";
 import { FaFolderOpen, FaMap, FaPlus, FaSignOutAlt } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -39,7 +40,7 @@ const Navbar = () => {
             {["officer", "admin"].includes(user.role) && (
               <Link to="/officer-dashboard">Officer desk</Link>
             )}
-            <Link to="/notifications">Notifications</Link>
+            <NotificationBell />
             <span className="nav-greeting">
               {user.name} · {user.role || "citizen"}
             </span>

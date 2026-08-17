@@ -18,11 +18,13 @@ const NotificationCenter = () => {
         message: payload.message || "A city leader shared a new post.",
       }),
     );
-    socket.on("notification:new", (payload) =>
+    socket.on("notification:new", (payload) => {
+      window.dispatchEvent(new Event("notification:received"));
       setNotice({
-        message: payload.message || payload.title || "You have a new case update.",
-      }),
-    );
+        message:
+          payload.message || payload.title || "You have a new case update.",
+      });
+    });
     return () => socket.disconnect();
   }, [user, token]);
   if (!notice) return null;
