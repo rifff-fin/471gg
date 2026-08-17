@@ -53,9 +53,7 @@ const emitAdminAlert = (payload = {}) => {
 const emitOfficialNotification = (payload = {}) => {
   if (!ioInstance) return;
 
-  ["mayor", "councillor"].forEach((role) => {
-    ioInstance.to(`role:${role}`).emit("official:announcement", payload);
-  });
+  ioInstance.to("role:citizen").emit("official:announcement", payload);
   ioInstance.emit("announcement:published", payload);
 };
 

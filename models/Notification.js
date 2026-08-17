@@ -24,8 +24,14 @@ const notificationSchema = new mongoose.Schema(
 
     type: {
       type: String,
-
+      enum: ["fine", "official_post"],
       default: "fine",
+    },
+
+    announcement: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Announcement",
+      default: null,
     },
 
     read: {

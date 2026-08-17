@@ -10,7 +10,7 @@ const announcementSchema = new mongoose.Schema(
     authorName: { type: String, required: true, trim: true },
     authorRole: { type: String, enum: ["mayor", "councillor"], required: true },
     jurisdiction: { type: String, required: true, trim: true },
-    title: { type: String, required: true, trim: true, maxlength: 160 },
+    title: { type: String, trim: true, maxlength: 160, default: "" },
     body: { type: String, required: true, trim: true, maxlength: 3000 },
     type: {
       type: String,
@@ -21,6 +21,34 @@ const announcementSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Complaint",
       default: null,
+    },
+    reactions: {
+      type: [
+        {
+          user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+          },
+          type: { type: String, enum: ["support"], default: "support" },
+        },
+      ],
+      default: [],
+    },
+    comments: {
+      type: [
+        {
+          author: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+          },
+          authorName: { type: String, required: true },
+          authorRole: { type: String, required: true },
+          body: { type: String, required: true, trim: true, maxlength: 1000 },
+        },
+      ],
+      default: [],
     },
   },
   { timestamps: true },

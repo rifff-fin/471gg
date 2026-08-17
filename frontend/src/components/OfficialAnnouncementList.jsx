@@ -1,49 +1,147 @@
 import { useEffect, useState } from "react";
+import { FaComment, FaHandsClapping } from "react-icons/fa6";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
-const typeLabel = {
-  announcement: "Official announcement",
-  progress_update: "Progress update",
-  official_response: "Official response",
-};
+const formatDate = (value) =>
+  new Intl.DateTimeFormat("en-BD", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 
 const OfficialAnnouncementList = ({ refreshKey = 0 }) => {
-  const [announcements, setAnnouncements] = useState([]);
+  const { user } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [drafts, setDrafts] = useState({});
+  const loadPosts = async () => {
+    try {
+      const response = await api.get("/announcements");
+      setPosts(response.data.data || []);
+    } catch {
+      setPosts([]);
+    }
+  };
   useEffect(() => {
-    api
-      .get("/announcements")
-      .then((response) => setAnnouncements(response.data.data || []))
-      .catch(() => setAnnouncements([]));
+    loadPosts();
   }, [refreshKey]);
-  if (!announcements.length) return null;
+  const updatePost = (id, patch) =>
+    setPosts((current) =>
+      current.map((post) => (post._id === id ? { ...post, ...patch } : post)),
+    );
+  const react = async (post) => {
+    if (!user) return;
+    const response = await api.post(`/announcements/${post._id}/reactions`);
+    await loadPosts();
+    return response;
+  };
+  const comment = async (event, post) => {
+    event.preventDefault();
+    const body = drafts[post._id]?.trim();
+    if (!body || !user) return;
+    const response = await api.post(`/announcements/${post._id}/comments`, {
+      body,
+    });
+    updatePost(post._id, {
+      comments: [...(post.comments || []), response.data.data],
+    });
+    setDrafts((current) => ({ ...current, [post._id]: "" }));
+  };
+  if (!posts.length) return null;
   return (
-    <section className="official-updates" aria-label="Official updates">
-      <div className="official-updates__heading">
+    <section className="official-feed" aria-label="Official community posts">
+      <div className="official-feed__heading">
         <div>
-          <p className="eyebrow">Verified city hall</p>
-          <h2>Official updates</h2>
+          <p className="eyebrow">From your city leaders</p>
+          <h2>Community updates</h2>
         </div>
-        <span>Shown first</span>
+        <span>Verified accounts</span>
       </div>
-      <div className="official-updates__list">
-        {announcements.slice(0, 3).map((announcement) => (
-          <article className="official-update" key={announcement._id}>
-            <div className="official-update__meta">
-              <strong>✓ {announcement.authorName}</strong>
-              <span>
-                {announcement.authorRole} · {announcement.jurisdiction}
-              </span>
-            </div>
-            <span className="official-update__type">
-              {typeLabel[announcement.type]}
-            </span>
-            <h3>{announcement.title}</h3>
-            <p>{announcement.body}</p>
-            {announcement.complaint?.title && (
-              <small>Regarding: {announcement.complaint.title}</small>
-            )}
-          </article>
-        ))}
+      <div className="official-feed__list">
+        {posts.map((post) => {
+          const supported = post.reactions?.some(
+            (reaction) =>
+              String(reaction.user?._id || reaction.user) ===
+              String(user?._id || user?.id),
+          );
+          return (
+            <article className="official-post" key={post._id}>
+              <header>
+                <div className="official-post__avatar">
+                  {post.authorName?.[0] || "E"}
+                </div>
+                <div>
+                  <strong>✓ {post.authorName}</strong>
+                  <span>
+                    {post.authorRole} · {post.jurisdiction} ·{" "}
+                    {formatDate(post.createdAt)}
+                  </span>
+                </div>
+              </header>
+              {post.title && <h3>{post.title}</h3>}
+              <p className="official-post__body">{post.body}</p>
+              {post.complaint?.title && (
+                <small>Related report: {post.complaint.title}</small>
+              )}
+              <div className="official-post__stats">
+                <span>{post.reactions?.length || 0} community supports</span>
+                <span>{post.comments?.length || 0} comments</span>
+              </div>
+              <div className="official-post__actions">
+                <button
+                  className={supported ? "is-active" : ""}
+                  type="button"
+                  onClick={() => react(post)}
+                  disabled={!user}
+                >
+                  <FaHandsClapping /> Support
+                </button>
+                <button
+                  type="button"
+                  disabled={!user}
+                  onClick={(event) =>
+                    event.currentTarget
+                      .closest("article")
+                      .querySelector("input")
+                      .focus()
+                  }
+                >
+                  <FaComment /> Comment
+                </button>
+              </div>
+              <div className="official-post__comments">
+                {(post.comments || []).slice(-3).map((item) => (
+                  <div className="official-post__comment" key={item._id}>
+                    <strong>{item.authorName}</strong>
+                    <span>{item.authorRole}</span>
+                    <p>{item.body}</p>
+                  </div>
+                ))}
+              </div>
+              {user ? (
+                <form
+                  className="official-post__composer"
+                  onSubmit={(event) => comment(event, post)}
+                >
+                  <input
+                    value={drafts[post._id] || ""}
+                    onChange={(event) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [post._id]: event.target.value,
+                      }))
+                    }
+                    placeholder="Write a respectful comment…"
+                  />
+                  <button type="submit">Post</button>
+                </form>
+              ) : (
+                <p className="official-post__signin">
+                  Sign in to support or comment.
+                </p>
+              )}
+            </article>
+          );
+        })}
       </div>
     </section>
   );

@@ -4,8 +4,8 @@ Last updated: 2026-08-18
 Implemented on riff:
 - Merged feature/field-worker-completion-report into riff on 2026-08-18, preserving the newer Cloudinary and official-update workflows while adding the branch's fine, notification, and standalone completion-report modules.
 - Field-worker completion reports already exist in riff. Cloudinary uploads now require valid Cloudinary credentials and use automatic format/quality optimization for secure delivery; data-URL fallback was removed.
-- Added official announcements: mayors and councillors can publish announcements, progress updates, and complaint responses within their assigned jurisdiction.
-- Official posts appear before the complaint feed. Socket.io sends live popup notifications only to authenticated mayor/councillor role rooms; the public receives the post but no popup.
+- Member-3 official communication is now a Facebook-style civic post feed: mayors and councillors can share optional-headline announcements, progress updates, and complaint responses. Citizens can support and comment on posts.
+- Official posts appear before complaint reports. Every registered citizen receives a saved in-app notification and online citizen accounts receive a live Socket.io popup; officials can still post only within their jurisdiction.
 - Added seedable official accounts for Dhaka North, Dhaka South, and a Dhaka North councillor.
 
 Run official seed after MongoDB is configured:

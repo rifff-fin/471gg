@@ -29,7 +29,7 @@ const OfficialUpdates = () => {
       setForm({ title: "", body: "", type: "announcement", complaintId: "" });
       setRefreshKey((value) => value + 1);
       setMessage(
-        "Official update published. Mayors and councillors have been notified.",
+        "Your post is live. Citizens have received their in-app notification.",
       );
     } catch (error) {
       setMessage(
@@ -45,14 +45,14 @@ const OfficialUpdates = () => {
         <p className="eyebrow">Verified official console</p>
         <h1>Publish a city update</h1>
         <p>
-          Posts appear at the top of the public feed. Live notifications go only
-          to mayor and councillor accounts.
+          Share a direct update with residents. Every registered citizen
+          receives an in-app notification and can respond in the community feed.
         </p>
       </section>
       <form className="official-form" onSubmit={submit}>
         {message && <div className="notice">{message}</div>}
         <label>
-          Title
+          Headline (optional)
           <input
             required
             value={form.title}
