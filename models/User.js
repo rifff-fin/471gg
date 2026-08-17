@@ -38,10 +38,11 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: "" },
     bio: { type: String, trim: true, maxlength: 280, default: "" },
     ward: { type: String, trim: true, maxlength: 100, default: "" },
+    jurisdiction: { type: String, trim: true, maxlength: 100, default: "" },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 module.exports = mongoose.model("User", userSchema);

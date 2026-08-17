@@ -7,7 +7,9 @@ const imageOnly = (req, file, callback) => {
     return callback(null, true);
   }
 
-  return callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+  return callback(
+    new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname),
+  );
 };
 
 const upload = multer({

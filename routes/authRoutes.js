@@ -9,10 +9,7 @@ const {
   updateProfile,
 } = require("../controllers/authController");
 
-const {
-  protect,
-  authorize,
-} = require("../middleware/authMiddleware");
+const { protect, authorize } = require("../middleware/authMiddleware");
 
 // Public routes
 router.post("/register", register);

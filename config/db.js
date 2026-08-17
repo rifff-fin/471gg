@@ -12,21 +12,15 @@ if (configuredDnsServers.length) {
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(
-      process.env.MONGODB_URI,
-      {
-        dbName: process.env.MONGODB_DB_NAME || "ekotro",
-        serverSelectionTimeoutMS: 15000,
-      }
-    );
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      dbName: process.env.MONGODB_DB_NAME || "ekotro",
+      serverSelectionTimeoutMS: 15000,
+    });
 
     console.log("✅ MongoDB Connected Successfully");
     console.log("Database:", conn.connection.name);
   } catch (error) {
-    console.error(
-      "❌ MongoDB Connection Error:",
-      error.message
-    );
+    console.error("❌ MongoDB Connection Error:", error.message);
 
     process.exit(1);
   }

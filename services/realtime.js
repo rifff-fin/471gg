@@ -1,9 +1,23 @@
+const jwt = require("jsonwebtoken");
+
+const JWT_SECRET = process.env.JWT_SECRET || "ekotro-dev-secret";
 let ioInstance = null;
 
 const registerSocketHandlers = (io) => {
   ioInstance = io;
 
   io.on("connection", (socket) => {
+    const token = socket.handshake.auth?.token;
+
+    if (token) {
+      try {
+        const user = jwt.verify(token, JWT_SECRET);
+        socket.join(`role:${user.role}`);
+      } catch (error) {
+        // Unauthenticated visitors can receive public complaint events only.
+      }
+    }
+
     socket.on("complaint:join", ({ complaintId }) => {
       if (complaintId) {
         socket.join(`complaint:${complaintId}`);
@@ -36,8 +50,18 @@ const emitAdminAlert = (payload = {}) => {
   emitComplaintEvent("dashboard:alert", payload);
 };
 
+const emitOfficialNotification = (payload = {}) => {
+  if (!ioInstance) return;
+
+  ["mayor", "councillor"].forEach((role) => {
+    ioInstance.to(`role:${role}`).emit("official:announcement", payload);
+  });
+  ioInstance.emit("announcement:published", payload);
+};
+
 module.exports = {
   registerSocketHandlers,
   emitComplaintEvent,
   emitAdminAlert,
+  emitOfficialNotification,
 };

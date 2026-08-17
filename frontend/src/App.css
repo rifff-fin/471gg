@@ -9,17 +9,14 @@ body {
   color: #1f2937;
 }
 
-
 a {
   text-decoration: none;
   color: inherit;
 }
 
-
 /* Navbar */
 
 .navbar {
-
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -33,46 +30,31 @@ a {
   position: sticky;
   top: 0;
   z-index: 10;
-
 }
 
-
 .nav-brand a {
-
   font-size: 24px;
   font-weight: 700;
 
   color: #2563eb;
-
 }
 
-
 .nav-links {
-
   display: flex;
   align-items: center;
   gap: 20px;
-
 }
-
 
 .nav-links a {
-
   color: #374151;
   font-weight: 500;
-
 }
-
 
 .nav-links a:hover {
-
   color: #2563eb;
-
 }
 
-
 .logout-btn {
-
   border: none;
 
   background: #ef4444;
@@ -84,37 +66,25 @@ a {
   border-radius: 8px;
 
   cursor: pointer;
-
 }
-
-
 
 /* Pages */
 
-
 .page-container {
-
   max-width: 1100px;
 
   margin: 40px auto;
 
   padding: 0 20px;
-
 }
-
 
 h1 {
-
   margin-bottom: 25px;
-
 }
-
 
 /* Complaint Card */
 
-
 .complaint-card {
-
   background: white;
 
   padding: 25px;
@@ -123,36 +93,22 @@ h1 {
 
   margin-bottom: 20px;
 
-  box-shadow:
-  0 10px 25px rgba(0,0,0,0.05);
-
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
-
-
 .complaint-card h3 {
-
   margin-top: 0;
 
   color: #111827;
-
 }
-
-
 
 .complaint-card p {
-
   color: #6b7280;
-
 }
-
-
 
 /* Status */
 
-
 .status {
-
   display: inline-block;
 
   padding: 5px 12px;
@@ -164,16 +120,11 @@ h1 {
   background: #fef3c7;
 
   color: #92400e;
-
 }
-
-
 
 /* Buttons */
 
-
 button {
-
   padding: 10px 18px;
 
   border-radius: 8px;
@@ -183,89 +134,59 @@ button {
   cursor: pointer;
 
   font-weight: 600;
-
 }
-
-
 
 button:hover {
-
-  opacity: .9;
-
+  opacity: 0.9;
 }
-
-
 
 .primary-btn {
-
   background: #2563eb;
 
-  color:white;
-
+  color: white;
 }
-
 
 .danger-btn {
+  background: #ef4444;
 
-  background:#ef4444;
-
-  color:white;
-
+  color: white;
 }
-
 
 /* Forms */
 
-
 .form-container {
+  max-width: 500px;
 
-  max-width:500px;
+  margin: 40px auto;
 
-  margin:40px auto;
+  background: white;
 
-  background:white;
+  padding: 30px;
 
-  padding:30px;
+  border-radius: 16px;
 
-  border-radius:16px;
-
-  box-shadow:
-  0 10px 25px rgba(0,0,0,.05);
-
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
-
-
 
 input,
 textarea {
+  width: 100%;
 
-  width:100%;
+  padding: 12px;
 
-  padding:12px;
+  margin: 8px 0 18px;
 
-  margin:8px 0 18px;
+  border: 1px solid #d1d5db;
 
-  border:
+  border-radius: 10px;
 
-  1px solid #d1d5db;
-
-  border-radius:10px;
-
-  font-size:15px;
-
+  font-size: 15px;
 }
-
 
 textarea {
-
-  min-height:120px;
-
+  min-height: 120px;
 }
 
-
-
 label {
-
-  font-weight:600;
-
+  font-weight: 600;
 }

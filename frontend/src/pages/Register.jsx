@@ -26,7 +26,7 @@ const Register = () => {
       setError(
         error.response?.data?.message ||
           error.message ||
-          "Registration failed."
+          "Registration failed.",
       );
     } finally {
       setSubmitting(false);
@@ -38,9 +38,7 @@ const Register = () => {
       <div className="auth-card">
         <h1>Create Account</h1>
 
-        <p className="subtitle">
-          Join Ekkotro as a citizen
-        </p>
+        <p className="subtitle">Join Ekkotro as a citizen</p>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -82,18 +80,13 @@ const Register = () => {
             />
           </div>
 
-          <button
-            className="primary-btn"
-            type="submit"
-            disabled={submitting}
-          >
+          <button className="primary-btn" type="submit" disabled={submitting}>
             {submitting ? "Creating account..." : "Register"}
           </button>
         </form>
 
         <p className="auth-footer">
-          Already have an account?{" "}
-          <Link to="/login">Login</Link>
+          Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
     </div>

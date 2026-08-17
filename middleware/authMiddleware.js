@@ -30,10 +30,7 @@ const protect = (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(
-      token,
-      JWT_SECRET
-    );
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     // Attach decoded user data to request
     req.user = decoded;
@@ -64,7 +61,6 @@ const protect = (req, res, next) => {
   }
 };
 
-
 // ========================================
 // Authorization Middleware
 // Checks whether authenticated user's role
@@ -92,16 +88,13 @@ const authorize = (...roles) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Access denied. Required role: ${roles.join(
-          " or "
-        )}`,
+        message: `Access denied. Required role: ${roles.join(" or ")}`,
       });
     }
 
     next();
   };
 };
-
 
 // ========================================
 // Export Middleware

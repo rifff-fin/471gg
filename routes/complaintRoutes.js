@@ -30,8 +30,18 @@ router.get("/my", protect, getMyComplaints);
 router.get("/admin/stream", protect, authorize("admin"), getAdminStream);
 router.post("/:id/upvote", protect, upvoteComplaint);
 router.post("/:id/vote", protect, voteComplaint);
-router.post("/:id/hold", protect, authorize("officer", "councillor", "mayor", "admin"), holdComplaint);
-router.post("/:id/release", protect, authorize("officer", "councillor", "mayor", "admin"), releaseComplaint);
+router.post(
+  "/:id/hold",
+  protect,
+  authorize("officer", "councillor", "mayor", "admin"),
+  holdComplaint,
+);
+router.post(
+  "/:id/release",
+  protect,
+  authorize("officer", "councillor", "mayor", "admin"),
+  releaseComplaint,
+);
 router.post("/:id/comments", protect, addComplaintComment);
 router.post("/:id/comments/:commentId/replies", protect, replyToComment);
 router.get("/:id/comments", getComplaintComments);
@@ -46,10 +56,16 @@ router.post(
     { name: "beforeImages", maxCount: 5 },
     { name: "afterImages", maxCount: 5 },
   ]),
-  addCompletionReport
+  addCompletionReport,
 );
 
-router.post("/", protect, authorize("citizen"), upload.array("attachments", 8), createComplaint);
+router.post(
+  "/",
+  protect,
+  authorize("citizen"),
+  upload.array("attachments", 8),
+  createComplaint,
+);
 router.get("/:id", getComplaintById);
 router.put("/:id", protect, authorize("citizen"), updateComplaint);
 router.delete("/:id", protect, authorize("citizen"), deleteComplaint);

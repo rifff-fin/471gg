@@ -3,8 +3,8 @@ const { PassThrough } = require("stream");
 
 const isConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET,
 );
 
 if (isConfigured) {
@@ -21,13 +21,11 @@ const uploadBuffer = (buffer, options = {}) => {
   }
 
   if (!isConfigured) {
-    const mimeType = options.mimeType || "image/jpeg";
-    return Promise.resolve({
-      public_id: options.publicId || `local-${Date.now()}`,
-      secure_url: `data:${mimeType};base64,${buffer.toString("base64")}`,
-      bytes: buffer.length,
-      resource_type: "image",
-    });
+    return Promise.reject(
+      new Error(
+        "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.",
+      ),
+    );
   }
 
   return new Promise((resolve, reject) => {
@@ -35,7 +33,12 @@ const uploadBuffer = (buffer, options = {}) => {
       {
         folder: options.folder || "ekotro",
         resource_type: options.resource_type || "image",
-        transformation: options.transformation,
+        format: options.format || "auto",
+        transformation: options.transformation || [
+          { quality: "auto:good", fetch_format: "auto" },
+        ],
+        overwrite: false,
+        unique_filename: true,
       },
       (error, result) => {
         if (error) {
@@ -44,7 +47,7 @@ const uploadBuffer = (buffer, options = {}) => {
         }
 
         resolve(result);
-      }
+      },
     );
 
     const readable = new PassThrough();

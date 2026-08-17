@@ -1,223 +1,85 @@
 import { useEffect, useState } from "react";
 
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup
-} from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 
 import api from "../services/api";
 import "leaflet/dist/leaflet.css";
 
-
-
 function ComplaintMap() {
-
-
   const [complaints, setComplaints] = useState([]);
 
-
-
   useEffect(() => {
-
-
     const fetchComplaints = async () => {
-
-
       try {
+        const response = await api.get("/complaints");
 
-
-        const response =
-          await api.get("/complaints");
-
-
-        setComplaints(
-          response.data.data || []
-        );
-
-
-      } catch(error) {
-
-
-        console.error(
-          "Failed to load complaints:",
-          error
-        );
-
-
+        setComplaints(response.data.data || []);
+      } catch (error) {
+        console.error("Failed to load complaints:", error);
       }
-
-
     };
 
-
     fetchComplaints();
-
-
   }, []);
 
-
-
-
   return (
-
     <div>
-
-
-      <h1>
-        Complaint Map
-      </h1>
-
-
+      <h1>Complaint Map</h1>
 
       <MapContainer
-
-        center={[
-          23.8103,
-          90.4125
-        ]}
-
+        center={[23.8103, 90.4125]}
         zoom={13}
-
         style={{
-          height:"600px",
-          width:"100%",
-          borderRadius:"15px"
+          height: "600px",
+          width: "100%",
+          borderRadius: "15px",
         }}
-
       >
-
-
         <TileLayer
-
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-
           attribution="&copy; OpenStreetMap contributors"
-
         />
 
-
-
-        {
-          complaints
+        {complaints
 
           .filter(
-
-            complaint =>
-
+            (complaint) =>
               complaint.location &&
-
               complaint.location.coordinates &&
-
-              complaint.location.coordinates.length === 2
-
+              complaint.location.coordinates.length === 2,
           )
 
-
-          .map((complaint)=>(
-
-
+          .map((complaint) => (
             <Marker
-
-
               key={complaint._id}
-
-
               position={[
-
-
                 complaint.location.coordinates[1],
 
-
-                complaint.location.coordinates[0]
-
-
+                complaint.location.coordinates[0],
               ]}
-
-
             >
-
-
               <Popup>
+                <h3>{complaint.title}</h3>
 
-
-                <h3>
-
-                  {complaint.title}
-
-                </h3>
-
-
+                <p>{complaint.description}</p>
 
                 <p>
-
-                  {complaint.description}
-
+                  <strong>Category:</strong> {complaint.category || "N/A"}
                 </p>
-
-
 
                 <p>
-
-                  <strong>
-                    Category:
-                  </strong>
-
-                  {" "}
-
-                  {complaint.category || "N/A"}
-
+                  <strong>Priority:</strong> {complaint.priority || "N/A"}
                 </p>
-
-
 
                 <p>
-
-                  <strong>
-                    Priority:
-                  </strong>
-
-                  {" "}
-
-                  {complaint.priority || "N/A"}
-
+                  <strong>Status:</strong> {complaint.status}
                 </p>
-
-
-
-                <p>
-
-                  <strong>
-                    Status:
-                  </strong>
-
-                  {" "}
-
-                  {complaint.status}
-
-                </p>
-
-
               </Popup>
-
-
             </Marker>
-
-
-          ))
-        }
-
-
-
+          ))}
       </MapContainer>
-
-
     </div>
-
   );
-
 }
-
 
 export default ComplaintMap;

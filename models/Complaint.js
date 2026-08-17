@@ -6,9 +6,13 @@ const mediaSchema = new mongoose.Schema(
     publicId: { type: String, default: "" },
     originalName: { type: String, default: "" },
     mimeType: { type: String, default: "" },
-    stage: { type: String, enum: ["complaint", "before", "after"], default: "complaint" },
+    stage: {
+      type: String,
+      enum: ["complaint", "before", "after"],
+      default: "complaint",
+    },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const ledgerEntrySchema = new mongoose.Schema(
@@ -18,17 +22,21 @@ const ledgerEntrySchema = new mongoose.Schema(
     actor: { type: String, default: "System" },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
-  { _id: false, timestamps: true }
+  { _id: false, timestamps: true },
 );
 
 const replySchema = new mongoose.Schema(
   {
-    authorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    authorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     authorName: { type: String, required: true },
     authorRole: { type: String, default: "citizen" },
     body: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const commentSchema = new mongoose.Schema(
@@ -37,10 +45,14 @@ const commentSchema = new mongoose.Schema(
     authorName: { type: String, required: true },
     authorRole: { type: String, default: "citizen" },
     body: { type: String, required: true },
-    channel: { type: String, enum: ["public", "internal", "private"], default: "public" },
+    channel: {
+      type: String,
+      enum: ["public", "internal", "private"],
+      default: "public",
+    },
     replies: { type: [replySchema], default: [] },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const voteSchema = new mongoose.Schema(
@@ -51,7 +63,7 @@ const voteSchema = new mongoose.Schema(
     voteType: { type: String, enum: ["up", "down"], required: true },
     actor: { type: String, default: "Citizen" },
   },
-  { _id: false, timestamps: true }
+  { _id: false, timestamps: true },
 );
 
 const reportSchema = new mongoose.Schema(
@@ -61,12 +73,17 @@ const reportSchema = new mongoose.Schema(
     beforeImages: { type: [mediaSchema], default: [] },
     afterImages: { type: [mediaSchema], default: [] },
   },
-  { _id: false, timestamps: true }
+  { _id: false, timestamps: true },
 );
 
 const complaintSchema = new mongoose.Schema(
   {
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     citizenName: { type: String, required: true },
     citizenEmail: { type: String, required: true },
     title: { type: String, required: true, trim: true },
@@ -74,11 +91,23 @@ const complaintSchema = new mongoose.Schema(
     description: { type: String, required: true, trim: true },
     ward: { type: String, default: "" },
     department: { type: String, default: "Pending" },
-    status: { type: String, enum: ["Pending", "In Progress", "Resolved", "Closed", "Held Pending"], default: "Pending" },
+    status: {
+      type: String,
+      enum: ["Pending", "In Progress", "Resolved", "Closed", "Held Pending"],
+      default: "Pending",
+    },
     assigned: { type: Boolean, default: false },
-    holdState: { type: String, enum: ["ACTIVE", "HELD_PENDING", "RELEASED"], default: "ACTIVE" },
+    holdState: {
+      type: String,
+      enum: ["ACTIVE", "HELD_PENDING", "RELEASED"],
+      default: "ACTIVE",
+    },
     holdReason: { type: String, default: "" },
-    priorityLevel: { type: String, enum: ["Low", "Medium", "High", "Critical"], default: "Medium" },
+    priorityLevel: {
+      type: String,
+      enum: ["Low", "Medium", "High", "Critical"],
+      default: "Medium",
+    },
     priorityScore: { type: Number, default: 0 },
     severityCoefficient: { type: Number, default: 1 },
     upvotes: { type: Number, default: 0 },
@@ -95,7 +124,7 @@ const complaintSchema = new mongoose.Schema(
       coordinates: { type: [Number], required: true },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 complaintSchema.index({ location: "2dsphere" });

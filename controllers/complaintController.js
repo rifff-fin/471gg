@@ -1,11 +1,16 @@
 const Complaint = require("../models/Complaint");
 const User = require("../models/User");
 const { uploadBuffer } = require("../services/cloudinary");
-const { calculateComplaintPriority, getPriorityLabel } = require("../services/priority");
+const {
+  calculateComplaintPriority,
+  getPriorityLabel,
+} = require("../services/priority");
 const { emitComplaintEvent, emitAdminAlert } = require("../services/realtime");
 
 const SLA_THRESHOLD_HOURS = Number(process.env.SLA_THRESHOLD_HOURS || 24);
-const HEATMAP_PRIORITY_THRESHOLD = Number(process.env.HEATMAP_PRIORITY_THRESHOLD || 60);
+const HEATMAP_PRIORITY_THRESHOLD = Number(
+  process.env.HEATMAP_PRIORITY_THRESHOLD || 60,
+);
 
 const departmentByCategory = {
   "Road & Infrastructure": "Public Works",
@@ -16,28 +21,43 @@ const departmentByCategory = {
   Sanitation: "Sanitation",
 };
 
-const routeDepartment = (category) => departmentByCategory[category] || "Citizen Services";
-const authorityRoles = new Set(["officer", "field_worker", "councillor", "mayor", "admin"]);
+const routeDepartment = (category) =>
+  departmentByCategory[category] || "Citizen Services";
+const authorityRoles = new Set([
+  "officer",
+  "field_worker",
+  "councillor",
+  "mayor",
+  "admin",
+]);
 const canAccessPrivateChat = (complaint, user) => {
   const ownerId = complaint.createdBy?._id || complaint.createdBy;
   return String(ownerId) === String(user?.id) || authorityRoles.has(user?.role);
 };
 
-const isTerminalStatus = (status = "") => ["Resolved", "Closed"].includes(status);
+const isTerminalStatus = (status = "") =>
+  ["Resolved", "Closed"].includes(status);
 
 const getComplaintAgeHours = (complaint = {}) => {
-  const createdAt = complaint.createdAt ? new Date(complaint.createdAt).getTime() : Date.now();
+  const createdAt = complaint.createdAt
+    ? new Date(complaint.createdAt).getTime()
+    : Date.now();
   return Math.max((Date.now() - createdAt) / 3600000, 0);
 };
 
-const isSlaBreached = (complaint) => !isTerminalStatus(complaint.status) && getComplaintAgeHours(complaint) >= SLA_THRESHOLD_HOURS;
+const isSlaBreached = (complaint) =>
+  !isTerminalStatus(complaint.status) &&
+  getComplaintAgeHours(complaint) >= SLA_THRESHOLD_HOURS;
 
 const buildHeatmapHotspots = (complaints = []) => {
   const buckets = new Map();
 
   complaints
     .filter((complaint) => !isTerminalStatus(complaint.status))
-    .filter((complaint) => Number(complaint.priorityScore || 0) >= HEATMAP_PRIORITY_THRESHOLD)
+    .filter(
+      (complaint) =>
+        Number(complaint.priorityScore || 0) >= HEATMAP_PRIORITY_THRESHOLD,
+    )
     .forEach((complaint) => {
       const coordinates = complaint?.location?.coordinates || [];
       if (!Array.isArray(coordinates) || coordinates.length !== 2) return;
@@ -69,10 +89,15 @@ const buildHeatmapHotspots = (complaints = []) => {
   return [...buckets.values()]
     .map((bucket) => ({
       ...bucket,
-      avgPriorityScore: Number((bucket.avgPriorityScore / Math.max(bucket.complaintCount, 1)).toFixed(2)),
+      avgPriorityScore: Number(
+        (bucket.avgPriorityScore / Math.max(bucket.complaintCount, 1)).toFixed(
+          2,
+        ),
+      ),
     }))
     .sort((left, right) => {
-      if (right.complaintCount !== left.complaintCount) return right.complaintCount - left.complaintCount;
+      if (right.complaintCount !== left.complaintCount)
+        return right.complaintCount - left.complaintCount;
       return right.avgPriorityScore - left.avgPriorityScore;
     });
 };
@@ -102,7 +127,9 @@ const buildAdminStreamSnapshot = (complaints = []) => {
 };
 
 const publishAdminStream = async () => {
-  const complaints = await Complaint.find().select("title ward status priorityScore upvotes location createdAt");
+  const complaints = await Complaint.find().select(
+    "title ward status priorityScore upvotes location createdAt",
+  );
   const snapshot = buildAdminStreamSnapshot(complaints);
 
   emitComplaintEvent("dashboard:heatmap", {
@@ -115,7 +142,13 @@ const publishAdminStream = async () => {
     emitAdminAlert({
       complaintId: breach.complaintId,
       type: "sla-breach",
-      message: breach.title + " exceeded SLA by " + breach.ageHours + "h in " + breach.ward + ".",
+      message:
+        breach.title +
+        " exceeded SLA by " +
+        breach.ageHours +
+        "h in " +
+        breach.ward +
+        ".",
       ward: breach.ward,
       priorityScore: breach.priorityScore,
       ageHours: breach.ageHours,
@@ -135,19 +168,38 @@ const parseMaybeJson = (value) => {
 };
 
 const normalizeLocation = (body = {}) => {
-  const rawLat = body.latitude ?? body.lat ?? body.locationLat ?? body.location?.lat;
-  const rawLng = body.longitude ?? body.lng ?? body.locationLng ?? body.location?.lng;
+  const rawLat =
+    body.latitude ?? body.lat ?? body.locationLat ?? body.location?.lat;
+  const rawLng =
+    body.longitude ?? body.lng ?? body.locationLng ?? body.location?.lng;
   const lat = Number(rawLat);
   const lng = Number(rawLng);
 
-  if (rawLat !== "" && rawLng !== "" && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+  if (
+    rawLat !== "" &&
+    rawLng !== "" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180
+  ) {
     return { type: "Point", coordinates: [lng, lat] };
   }
 
   const parsedLocation = parseMaybeJson(body.location);
-  if (parsedLocation && parsedLocation.type === "Point" && Array.isArray(parsedLocation.coordinates) && parsedLocation.coordinates.length === 2) {
+  if (
+    parsedLocation &&
+    parsedLocation.type === "Point" &&
+    Array.isArray(parsedLocation.coordinates) &&
+    parsedLocation.coordinates.length === 2
+  ) {
     const [parsedLng, parsedLat] = parsedLocation.coordinates.map(Number);
-    if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng) && Math.abs(parsedLat) <= 90 && Math.abs(parsedLng) <= 180) {
+    if (
+      Number.isFinite(parsedLat) &&
+      Number.isFinite(parsedLng) &&
+      Math.abs(parsedLat) <= 90 &&
+      Math.abs(parsedLng) <= 180
+    ) {
       return { type: "Point", coordinates: [parsedLng, parsedLat] };
     }
   }
@@ -189,21 +241,29 @@ const rebalancePriority = async (complaint) => {
 const createComplaint = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "Authentication required" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication required" });
     }
 
     const { title, description } = req.body;
     const location = normalizeLocation(req.body);
 
     if (!title || !description || !location) {
-      return res.status(400).json({ success: false, message: "Title, description and location are required" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Title, description and location are required",
+        });
     }
 
     const attachments = await toMediaList(req.files || [], "complaint");
     const complaint = await Complaint.create({
       createdBy: req.user.id,
       citizenName: req.user.name || req.body.citizenName || "Citizen",
-      citizenEmail: req.user.email || req.body.citizenEmail || "anonymous@example.com",
+      citizenEmail:
+        req.user.email || req.body.citizenEmail || "anonymous@example.com",
       title,
       category: req.body.category || "General",
       description,
@@ -227,10 +287,19 @@ const createComplaint = async (req, res) => {
     await rebalancePriority(complaint);
     await complaint.save();
 
-    emitComplaintEvent("complaint:created", { complaintId: complaint._id, complaint });
+    emitComplaintEvent("complaint:created", {
+      complaintId: complaint._id,
+      complaint,
+    });
     await publishAdminStream();
 
-    res.status(201).json({ success: true, message: "Complaint created successfully", data: complaint });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Complaint created successfully",
+        data: complaint,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -264,8 +333,13 @@ const getAllComplaints = async (req, res) => {
       }
     }
 
-    const complaints = await Complaint.find(query).sort({ priorityScore: -1, createdAt: -1 });
-    res.status(200).json({ success: true, count: complaints.length, data: complaints });
+    const complaints = await Complaint.find(query).sort({
+      priorityScore: -1,
+      createdAt: -1,
+    });
+    res
+      .status(200)
+      .json({ success: true, count: complaints.length, data: complaints });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -273,8 +347,12 @@ const getAllComplaints = async (req, res) => {
 
 const getMyComplaints = async (req, res) => {
   try {
-    const complaints = await Complaint.find({ createdBy: req.user.id }).sort({ createdAt: -1 });
-    res.status(200).json({ success: true, count: complaints.length, data: complaints });
+    const complaints = await Complaint.find({ createdBy: req.user.id }).sort({
+      createdAt: -1,
+    });
+    res
+      .status(200)
+      .json({ success: true, count: complaints.length, data: complaints });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -282,8 +360,14 @@ const getMyComplaints = async (req, res) => {
 
 const getComplaintById = async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id).populate("createdBy", "name role avatar bio ward");
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    const complaint = await Complaint.findById(req.params.id).populate(
+      "createdBy",
+      "name role avatar bio ward",
+    );
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     res.status(200).json({ success: true, data: complaint });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -293,20 +377,56 @@ const getComplaintById = async (req, res) => {
 const updateComplaint = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
-    if (!complaint.createdBy || complaint.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: "You can only update your own complaint" });
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
+    if (
+      !complaint.createdBy ||
+      complaint.createdBy.toString() !== req.user.id
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "You can only update your own complaint",
+        });
     }
-    if (complaint.assigned) return res.status(403).json({ success: false, message: "Complaint already assigned. Update not allowed." });
+    if (complaint.assigned)
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Complaint already assigned. Update not allowed.",
+        });
 
-    const allowedUpdates = ["title", "category", "description", "ward", "priorityLevel", "severityCoefficient", "department", "status", "location"];
+    const allowedUpdates = [
+      "title",
+      "category",
+      "description",
+      "ward",
+      "priorityLevel",
+      "severityCoefficient",
+      "department",
+      "status",
+      "location",
+    ];
     allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined) {
-        complaint[field] = field === "severityCoefficient" ? Number(req.body[field]) : parseMaybeJson(req.body[field]);
+        complaint[field] =
+          field === "severityCoefficient"
+            ? Number(req.body[field])
+            : parseMaybeJson(req.body[field]);
       }
     });
 
-    if (req.body.location || req.body.latitude || req.body.longitude || req.body.lat || req.body.lng) {
+    if (
+      req.body.location ||
+      req.body.latitude ||
+      req.body.longitude ||
+      req.body.lat ||
+      req.body.lng
+    ) {
       const location = normalizeLocation(req.body);
       if (location) complaint.location = location;
     }
@@ -316,14 +436,25 @@ const updateComplaint = async (req, res) => {
       action: "complaint_updated",
       message: "Complaint details were updated.",
       actor: req.body.actor || req.user?.name || "System",
-      metadata: { fields: allowedUpdates.filter((field) => req.body[field] !== undefined) },
+      metadata: {
+        fields: allowedUpdates.filter((field) => req.body[field] !== undefined),
+      },
     });
 
     const updatedComplaint = await complaint.save();
-    emitComplaintEvent("complaint:updated", { complaintId: updatedComplaint._id, complaint: updatedComplaint });
+    emitComplaintEvent("complaint:updated", {
+      complaintId: updatedComplaint._id,
+      complaint: updatedComplaint,
+    });
     await publishAdminStream();
 
-    res.status(200).json({ success: true, message: "Complaint updated successfully", data: updatedComplaint });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Complaint updated successfully",
+        data: updatedComplaint,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -332,16 +463,35 @@ const updateComplaint = async (req, res) => {
 const deleteComplaint = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
-    if (!complaint.createdBy || complaint.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: "You can only delete your own complaint" });
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
+    if (
+      !complaint.createdBy ||
+      complaint.createdBy.toString() !== req.user.id
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "You can only delete your own complaint",
+        });
     }
-    if (complaint.assigned) return res.status(403).json({ success: false, message: "Complaint already assigned. Delete not allowed." });
+    if (complaint.assigned)
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Complaint already assigned. Delete not allowed.",
+        });
 
     await complaint.deleteOne();
     emitComplaintEvent("complaint:deleted", { complaintId: req.params.id });
     await publishAdminStream();
-    res.status(200).json({ success: true, message: "Complaint deleted successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Complaint deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -351,7 +501,12 @@ const getNearbyComplaints = async (req, res) => {
   try {
     const { lng, lat, distance } = req.query;
     if (!lng || !lat || !distance) {
-      return res.status(400).json({ success: false, message: "Longitude, latitude and distance are required" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Longitude, latitude and distance are required",
+        });
     }
 
     const complaints = await Complaint.find({
@@ -362,7 +517,9 @@ const getNearbyComplaints = async (req, res) => {
         },
       },
     });
-    res.status(200).json({ success: true, count: complaints.length, data: complaints });
+    res
+      .status(200)
+      .json({ success: true, count: complaints.length, data: complaints });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -392,7 +549,10 @@ const recordVote = async (complaint, type, req) => {
 
   complaint.publicLedger.push({
     action: type === "up" ? "complaint_upvoted" : "complaint_downvoted",
-    message: type === "up" ? "A citizen supported this complaint." : "A citizen downvoted this complaint.",
+    message:
+      type === "up"
+        ? "A citizen supported this complaint."
+        : "A citizen downvoted this complaint.",
     actor: req.body.actor || req.user?.name || "Citizen",
     metadata: {
       supporterKey,
@@ -411,21 +571,30 @@ const voteComplaint = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) {
-      return res.status(404).json({ success: false, message: "Complaint not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     }
 
     const type = String(req.body.type || "up").toLowerCase();
     if (!["up", "down"].includes(type)) {
-      return res.status(400).json({ success: false, message: "Vote type must be 'up' or 'down'." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Vote type must be 'up' or 'down'." });
     }
 
     const result = await recordVote(complaint, type, req);
     if (result?.error) {
-      return res.status(result.status).json({ success: false, message: result.error });
+      return res
+        .status(result.status)
+        .json({ success: false, message: result.error });
     }
 
     const updatedComplaint = result.updatedComplaint;
-    emitComplaintEvent("complaint:voted", { complaintId: updatedComplaint._id, complaint: updatedComplaint });
+    emitComplaintEvent("complaint:voted", {
+      complaintId: updatedComplaint._id,
+      complaint: updatedComplaint,
+    });
     emitAdminAlert({
       complaintId: updatedComplaint._id,
       type: "priority-updated",
@@ -434,7 +603,13 @@ const voteComplaint = async (req, res) => {
     });
     await publishAdminStream();
 
-    res.status(200).json({ success: true, message: "Vote recorded successfully", data: updatedComplaint });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Vote recorded successfully",
+        data: updatedComplaint,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -448,9 +623,19 @@ const upvoteComplaint = async (req, res) => {
 const holdComplaint = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     const reason = req.body.reason?.trim();
-    if (!reason) return res.status(400).json({ success: false, message: "A written rationale is required to place a complaint on hold." });
+    if (!reason)
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "A written rationale is required to place a complaint on hold.",
+        });
 
     complaint.status = "Held Pending";
     complaint.holdState = "HELD_PENDING";
@@ -464,7 +649,10 @@ const holdComplaint = async (req, res) => {
 
     await rebalancePriority(complaint);
     const updatedComplaint = await complaint.save();
-    emitComplaintEvent("complaint:held", { complaintId: updatedComplaint._id, complaint: updatedComplaint });
+    emitComplaintEvent("complaint:held", {
+      complaintId: updatedComplaint._id,
+      complaint: updatedComplaint,
+    });
     emitAdminAlert({
       complaintId: updatedComplaint._id,
       type: "held-pending",
@@ -472,7 +660,13 @@ const holdComplaint = async (req, res) => {
     });
     await publishAdminStream();
 
-    res.status(200).json({ success: true, message: "Complaint placed on hold successfully", data: updatedComplaint });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Complaint placed on hold successfully",
+        data: updatedComplaint,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -481,7 +675,10 @@ const holdComplaint = async (req, res) => {
 const releaseComplaint = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
 
     complaint.holdState = "RELEASED";
     complaint.holdReason = "";
@@ -494,10 +691,19 @@ const releaseComplaint = async (req, res) => {
 
     await rebalancePriority(complaint);
     const updatedComplaint = await complaint.save();
-    emitComplaintEvent("complaint:released", { complaintId: updatedComplaint._id, complaint: updatedComplaint });
+    emitComplaintEvent("complaint:released", {
+      complaintId: updatedComplaint._id,
+      complaint: updatedComplaint,
+    });
     await publishAdminStream();
 
-    res.status(200).json({ success: true, message: "Complaint released successfully", data: updatedComplaint });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Complaint released successfully",
+        data: updatedComplaint,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -506,9 +712,15 @@ const releaseComplaint = async (req, res) => {
 const addComplaintComment = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     const body = req.body.body?.trim();
-    if (!body) return res.status(400).json({ success: false, message: "Comment text is required" });
+    if (!body)
+      return res
+        .status(400)
+        .json({ success: false, message: "Comment text is required" });
 
     const comment = {
       authorId: req.user.id,
@@ -527,9 +739,19 @@ const addComplaintComment = async (req, res) => {
     });
 
     const updatedComplaint = await complaint.save();
-    const storedComment = updatedComplaint.comments[updatedComplaint.comments.length - 1];
-    emitComplaintEvent("complaint:commented", { complaintId: updatedComplaint._id, comment: storedComment });
-    res.status(201).json({ success: true, message: "Comment added successfully", data: storedComment });
+    const storedComment =
+      updatedComplaint.comments[updatedComplaint.comments.length - 1];
+    emitComplaintEvent("complaint:commented", {
+      complaintId: updatedComplaint._id,
+      comment: storedComment,
+    });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Comment added successfully",
+        data: storedComment,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -537,9 +759,20 @@ const addComplaintComment = async (req, res) => {
 
 const getComplaintComments = async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id).select("comments");
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
-    res.status(200).json({ success: true, count: complaint.comments.length, data: complaint.comments });
+    const complaint = await Complaint.findById(req.params.id).select(
+      "comments",
+    );
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
+    res
+      .status(200)
+      .json({
+        success: true,
+        count: complaint.comments.length,
+        data: complaint.comments,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -548,10 +781,19 @@ const getComplaintComments = async (req, res) => {
 const addCompletionReport = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
 
-    const beforeImages = await toMediaList(req.files?.beforeImages || [], "before");
-    const afterImages = await toMediaList(req.files?.afterImages || [], "after");
+    const beforeImages = await toMediaList(
+      req.files?.beforeImages || [],
+      "before",
+    );
+    const afterImages = await toMediaList(
+      req.files?.afterImages || [],
+      "after",
+    );
     const report = {
       note: req.body.note || "",
       submittedBy: req.user?.name || "Field Worker",
@@ -565,14 +807,30 @@ const addCompletionReport = async (req, res) => {
       action: "completion_report_uploaded",
       message: "Before-and-after completion report uploaded.",
       actor: report.submittedBy,
-      metadata: { beforeImages: beforeImages.length, afterImages: afterImages.length },
+      metadata: {
+        beforeImages: beforeImages.length,
+        afterImages: afterImages.length,
+      },
     });
 
     const updatedComplaint = await complaint.save();
-    emitComplaintEvent("complaint:report-uploaded", { complaintId: updatedComplaint._id, complaint: updatedComplaint });
-    emitAdminAlert({ complaintId: updatedComplaint._id, type: "report-uploaded", message: updatedComplaint.title + " now has a completion report." });
+    emitComplaintEvent("complaint:report-uploaded", {
+      complaintId: updatedComplaint._id,
+      complaint: updatedComplaint,
+    });
+    emitAdminAlert({
+      complaintId: updatedComplaint._id,
+      type: "report-uploaded",
+      message: updatedComplaint.title + " now has a completion report.",
+    });
     await publishAdminStream();
-    res.status(201).json({ success: true, message: "Completion report uploaded successfully", data: report });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Completion report uploaded successfully",
+        data: report,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -581,13 +839,25 @@ const addCompletionReport = async (req, res) => {
 const addChatMessage = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     if (!canAccessPrivateChat(complaint, req.user)) {
-      return res.status(403).json({ success: false, message: "Only the reporter and authorized municipal staff can use this private conversation." });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message:
+            "Only the reporter and authorized municipal staff can use this private conversation.",
+        });
     }
 
     const body = req.body.body?.trim();
-    if (!body) return res.status(400).json({ success: false, message: "Message text is required" });
+    if (!body)
+      return res
+        .status(400)
+        .json({ success: false, message: "Message text is required" });
 
     const message = {
       authorId: req.user.id,
@@ -606,9 +876,19 @@ const addChatMessage = async (req, res) => {
     });
 
     const updatedComplaint = await complaint.save();
-    const storedMessage = updatedComplaint.chatMessages[updatedComplaint.chatMessages.length - 1];
-    emitComplaintEvent("complaint:message", { complaintId: updatedComplaint._id, message: storedMessage });
-    res.status(201).json({ success: true, message: "Message posted successfully", data: storedMessage });
+    const storedMessage =
+      updatedComplaint.chatMessages[updatedComplaint.chatMessages.length - 1];
+    emitComplaintEvent("complaint:message", {
+      complaintId: updatedComplaint._id,
+      message: storedMessage,
+    });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Message posted successfully",
+        data: storedMessage,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -616,12 +896,28 @@ const addChatMessage = async (req, res) => {
 
 const getChatMessages = async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id).select("chatMessages createdBy");
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    const complaint = await Complaint.findById(req.params.id).select(
+      "chatMessages createdBy",
+    );
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     if (!canAccessPrivateChat(complaint, req.user)) {
-      return res.status(403).json({ success: false, message: "This is a private reporter-to-authority conversation." });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "This is a private reporter-to-authority conversation.",
+        });
     }
-    res.status(200).json({ success: true, count: complaint.chatMessages.length, data: complaint.chatMessages });
+    res
+      .status(200)
+      .json({
+        success: true,
+        count: complaint.chatMessages.length,
+        data: complaint.chatMessages,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -629,9 +925,25 @@ const getChatMessages = async (req, res) => {
 
 const getComplaintLedger = async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id).select("publicLedger priorityScore upvotes holdState status");
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
-    res.status(200).json({ success: true, data: { priorityScore: complaint.priorityScore, upvotes: complaint.upvotes, holdState: complaint.holdState, status: complaint.status, ledger: complaint.publicLedger } });
+    const complaint = await Complaint.findById(req.params.id).select(
+      "publicLedger priorityScore upvotes holdState status",
+    );
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
+    res
+      .status(200)
+      .json({
+        success: true,
+        data: {
+          priorityScore: complaint.priorityScore,
+          upvotes: complaint.upvotes,
+          holdState: complaint.holdState,
+          status: complaint.status,
+          ledger: complaint.publicLedger,
+        },
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -639,7 +951,9 @@ const getComplaintLedger = async (req, res) => {
 
 const getAdminStream = async (req, res) => {
   try {
-    const complaints = await Complaint.find().select("title ward status priorityScore upvotes location createdAt");
+    const complaints = await Complaint.find().select(
+      "title ward status priorityScore upvotes location createdAt",
+    );
     const snapshot = buildAdminStreamSnapshot(complaints);
     res.status(200).json({ success: true, data: snapshot });
   } catch (error) {
@@ -650,11 +964,24 @@ const getAdminStream = async (req, res) => {
 const replyToComment = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!complaint)
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     const body = req.body.body?.trim();
-    if (!body) return res.status(400).json({ success: false, message: "Reply text is required" });
+    if (!body)
+      return res
+        .status(400)
+        .json({ success: false, message: "Reply text is required" });
     const comment = complaint.comments.id(req.params.commentId);
-    if (!comment) return res.status(404).json({ success: false, message: "Comment not found or was created before replies were enabled" });
+    if (!comment)
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message:
+            "Comment not found or was created before replies were enabled",
+        });
 
     comment.replies.push({
       authorId: req.user.id,
@@ -665,8 +992,18 @@ const replyToComment = async (req, res) => {
     const updatedComplaint = await complaint.save();
     const savedComment = updatedComplaint.comments.id(req.params.commentId);
     const reply = savedComment.replies[savedComment.replies.length - 1];
-    emitComplaintEvent("complaint:comment-replied", { complaintId: updatedComplaint._id, commentId: req.params.commentId, reply });
-    res.status(201).json({ success: true, message: "Reply posted successfully", data: reply });
+    emitComplaintEvent("complaint:comment-replied", {
+      complaintId: updatedComplaint._id,
+      commentId: req.params.commentId,
+      reply,
+    });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Reply posted successfully",
+        data: reply,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

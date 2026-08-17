@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FaArrowUp, FaArrowDown, FaCommentDots, FaUsers, FaUserShield } from "react-icons/fa";
+import {
+  FaArrowUp,
+  FaArrowDown,
+  FaCommentDots,
+  FaUsers,
+  FaUserShield,
+} from "react-icons/fa";
 import { io } from "socket.io-client";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -29,13 +35,15 @@ const createEmptyComplaintForm = (user) => ({
 
 const sortComplaints = (items) => {
   return [...items].sort((left, right) => {
-    const upvoteDifference = Number(right.upvotes || 0) - Number(left.upvotes || 0);
+    const upvoteDifference =
+      Number(right.upvotes || 0) - Number(left.upvotes || 0);
 
     if (upvoteDifference !== 0) {
       return upvoteDifference;
     }
 
-    const scoreDifference = Number(right.priorityScore || 0) - Number(left.priorityScore || 0);
+    const scoreDifference =
+      Number(right.priorityScore || 0) - Number(left.priorityScore || 0);
 
     if (scoreDifference !== 0) {
       return scoreDifference;
@@ -57,7 +65,9 @@ const Home = () => {
   const [alerts, setAlerts] = useState([]);
   const [selectedComplaintId, setSelectedComplaintId] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [createForm, setCreateForm] = useState(() => createEmptyComplaintForm(user));
+  const [createForm, setCreateForm] = useState(() =>
+    createEmptyComplaintForm(user),
+  );
   const [createFiles, setCreateFiles] = useState([]);
   const [commentDraft, setCommentDraft] = useState("");
   const [internalDraft, setInternalDraft] = useState("");
@@ -75,14 +85,23 @@ const Home = () => {
   const [slaBreaches, setSlaBreaches] = useState([]);
   const [streamThreshold, setStreamThreshold] = useState(24);
 
-  const complaintStatuses = ["Pending", "In Progress", "Resolved", "Closed", "Held Pending"];
+  const complaintStatuses = [
+    "Pending",
+    "In Progress",
+    "Resolved",
+    "Closed",
+    "Held Pending",
+  ];
 
   const selectedComplaint = useMemo(() => {
     if (!complaints.length) {
       return null;
     }
 
-    return complaints.find((item) => item._id === selectedComplaintId) || complaints[0];
+    return (
+      complaints.find((item) => item._id === selectedComplaintId) ||
+      complaints[0]
+    );
   }, [complaints, selectedComplaintId]);
 
   const upsertComplaint = (incomingComplaint) => {
@@ -92,7 +111,7 @@ const Home = () => {
 
     const mergedUpvotes = Math.max(
       Number(incomingComplaint.upvotes || 0),
-      Number(optimisticUpvotes[incomingComplaint._id] ?? 0)
+      Number(optimisticUpvotes[incomingComplaint._id] ?? 0),
     );
 
     const complaintToStore = {
@@ -117,7 +136,9 @@ const Home = () => {
   };
 
   const removeComplaint = (complaintId) => {
-    setComplaints((current) => current.filter((item) => item._id !== complaintId));
+    setComplaints((current) =>
+      current.filter((item) => item._id !== complaintId),
+    );
   };
 
   const refreshComplaint = async (complaintId) => {
@@ -156,7 +177,11 @@ const Home = () => {
         setSelectedComplaintId(items[0]._id);
       }
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to load complaints.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to load complaints.",
+      );
     } finally {
       setLoading(false);
     }
@@ -176,7 +201,11 @@ const Home = () => {
       setComplaints(items);
       setStatusMessage("Filters reset.");
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to reset filters.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to reset filters.",
+      );
     } finally {
       setLoading(false);
     }
@@ -191,7 +220,11 @@ const Home = () => {
       setSlaBreaches(data.breaches || []);
       setStreamThreshold(Number(data.thresholdHours || 24));
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to load admin stream snapshot.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to load admin stream snapshot.",
+      );
     }
   };
 
@@ -212,14 +245,16 @@ const Home = () => {
     socketRef.current = socket;
 
     const appendAlert = (payload) => {
-      setAlerts((current) => [
-        {
-          id: `${Date.now()}-${Math.random()}`,
-          message: payload.message || "Live update received.",
-          type: payload.type || "update",
-        },
-        ...current,
-      ].slice(0, 6));
+      setAlerts((current) =>
+        [
+          {
+            id: `${Date.now()}-${Math.random()}`,
+            message: payload.message || "Live update received.",
+            type: payload.type || "update",
+          },
+          ...current,
+        ].slice(0, 6),
+      );
     };
 
     const syncComplaint = async (payload) => {
@@ -254,7 +289,9 @@ const Home = () => {
         await refreshComplaint(payload.complaintId);
       }
     });
-    socket.on("complaint:deleted", (payload) => removeComplaint(payload?.complaintId));
+    socket.on("complaint:deleted", (payload) =>
+      removeComplaint(payload?.complaintId),
+    );
     socket.on("dashboard:alert", appendAlert);
     socket.on("dashboard:heatmap", (payload) => {
       setHeatmapHotspots(payload?.hotspots || []);
@@ -271,7 +308,9 @@ const Home = () => {
               ageHours: Number(payload.ageHours || 0),
               priorityScore: Number(payload.priorityScore || 0),
             },
-            ...current.filter((entry) => entry.complaintId !== payload.complaintId),
+            ...current.filter(
+              (entry) => entry.complaintId !== payload.complaintId,
+            ),
           ];
 
           return next.slice(0, 20);
@@ -340,9 +379,15 @@ const Home = () => {
       setSelectedComplaintId(createdComplaint._id);
       setCreateForm(createEmptyComplaintForm(user));
       setCreateFiles([]);
-      setStatusMessage("Complaint created, uploaded, and prioritized successfully.");
+      setStatusMessage(
+        "Complaint created, uploaded, and prioritized successfully.",
+      );
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to create complaint.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create complaint.",
+      );
     } finally {
       setSaving(false);
     }
@@ -358,7 +403,8 @@ const Home = () => {
     const previousUpvotes = Number(targetComplaint.upvotes || 0);
     const previousDownvotes = Number(targetComplaint.downvotes || 0);
     const optimisticUp = type === "up" ? previousUpvotes + 1 : previousUpvotes;
-    const optimisticDown = type === "down" ? previousDownvotes + 1 : previousDownvotes;
+    const optimisticDown =
+      type === "down" ? previousDownvotes + 1 : previousDownvotes;
 
     setOptimisticUpvotes((current) => ({
       ...current,
@@ -370,9 +416,9 @@ const Home = () => {
         current.map((item) =>
           item._id === complaintId
             ? { ...item, upvotes: optimisticUp, downvotes: optimisticDown }
-            : item
-        )
-      )
+            : item,
+        ),
+      ),
     );
 
     setSaving(true);
@@ -389,7 +435,9 @@ const Home = () => {
       const serverComplaint = response.data.data;
       upsertComplaint(serverComplaint);
       setSelectedComplaintId(complaintId);
-      setStatusMessage(type === "up" ? "Upvote registered." : "Downvote registered.");
+      setStatusMessage(
+        type === "up" ? "Upvote registered." : "Downvote registered.",
+      );
     } catch (error) {
       setOptimisticUpvotes((current) => {
         const next = { ...current };
@@ -401,13 +449,21 @@ const Home = () => {
         sortComplaints(
           current.map((item) =>
             item._id === complaintId
-              ? { ...item, upvotes: previousUpvotes, downvotes: previousDownvotes }
-              : item
-          )
-        )
+              ? {
+                  ...item,
+                  upvotes: previousUpvotes,
+                  downvotes: previousDownvotes,
+                }
+              : item,
+          ),
+        ),
       );
 
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to record vote.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to record vote.",
+      );
     } finally {
       setSaving(false);
     }
@@ -418,23 +474,34 @@ const Home = () => {
 
   const handleHoldComplaint = async () => {
     if (!selectedComplaint?._id || !holdReason.trim()) {
-      setStatusMessage("Add a written rationale before placing the complaint on hold.");
+      setStatusMessage(
+        "Add a written rationale before placing the complaint on hold.",
+      );
       return;
     }
 
     setSaving(true);
 
     try {
-      const response = await api.post(`/complaints/${selectedComplaint._id}/hold`, {
-        reason: holdReason,
-        actor: user?.name,
-      });
+      const response = await api.post(
+        `/complaints/${selectedComplaint._id}/hold`,
+        {
+          reason: holdReason,
+          actor: user?.name,
+        },
+      );
 
       upsertComplaint(response.data.data);
       setHoldReason("");
-      setStatusMessage("Complaint moved to HELD_PENDING and logged to the public ledger.");
+      setStatusMessage(
+        "Complaint moved to HELD_PENDING and logged to the public ledger.",
+      );
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to hold complaint.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to hold complaint.",
+      );
     } finally {
       setSaving(false);
     }
@@ -448,15 +515,22 @@ const Home = () => {
     setSaving(true);
 
     try {
-      const response = await api.post(`/complaints/${selectedComplaint._id}/release`, {
-        actor: user?.name,
-        status: "In Progress",
-      });
+      const response = await api.post(
+        `/complaints/${selectedComplaint._id}/release`,
+        {
+          actor: user?.name,
+          status: "In Progress",
+        },
+      );
 
       upsertComplaint(response.data.data);
       setStatusMessage("Complaint released from hold.");
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to release complaint.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to release complaint.",
+      );
     } finally {
       setSaving(false);
     }
@@ -489,9 +563,17 @@ const Home = () => {
         setCommentDraft("");
       }
 
-      setStatusMessage(channel === "internal" ? "Internal chat message posted live." : "Public comment posted live.");
+      setStatusMessage(
+        channel === "internal"
+          ? "Internal chat message posted live."
+          : "Public comment posted live.",
+      );
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to post message.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to post message.",
+      );
     } finally {
       setSaving(false);
     }
@@ -528,7 +610,11 @@ const Home = () => {
       setAfterFiles([]);
       setStatusMessage("Before-and-after completion report delivered.");
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || error.message || "Failed to upload report.");
+      setStatusMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to upload report.",
+      );
     } finally {
       setSaving(false);
     }
@@ -536,9 +622,16 @@ const Home = () => {
 
   const stats = useMemo(() => {
     const total = complaints.length;
-    const held = complaints.filter((item) => item.holdState === "HELD_PENDING").length;
-    const critical = complaints.filter((item) => Number(item.priorityScore || 0) >= 80).length;
-    const activeChats = complaints.reduce((sum, item) => sum + (item.chatMessages?.length || 0), 0);
+    const held = complaints.filter(
+      (item) => item.holdState === "HELD_PENDING",
+    ).length;
+    const critical = complaints.filter(
+      (item) => Number(item.priorityScore || 0) >= 80,
+    ).length;
+    const activeChats = complaints.reduce(
+      (sum, item) => sum + (item.chatMessages?.length || 0),
+      0,
+    );
 
     return {
       total,
@@ -562,12 +655,17 @@ const Home = () => {
     return complaint.upvotes || 0;
   };
 
-  const getVoteTypeLabel = (voteType) => (voteType === "down" ? "Downvote" : "Upvote");
-  const getSupporterLabel = (vote) => vote.supporterLabel || vote.actor || "Citizen";
-  const getSupporterRole = (vote) => vote.supporterRole || vote.actor || "citizen";
+  const getVoteTypeLabel = (voteType) =>
+    voteType === "down" ? "Downvote" : "Upvote";
+  const getSupporterLabel = (vote) =>
+    vote.supporterLabel || vote.actor || "Citizen";
+  const getSupporterRole = (vote) =>
+    vote.supporterRole || vote.actor || "citizen";
 
   if (loading) {
-    return <div className="center-message">Loading Ekkotro command board...</div>;
+    return (
+      <div className="center-message">Loading Ekkotro command board...</div>
+    );
   }
 
   return (
@@ -575,14 +673,22 @@ const Home = () => {
       <section className="hero-panel panel">
         <div className="hero-copy">
           <p className="eyebrow">Member 4 Workflow Center</p>
-          <h1>Realtime complaint control, public ledger, and field coordination.</h1>
+          <h1>
+            Realtime complaint control, public ledger, and field coordination.
+          </h1>
           <p>
-            Submit complaint assets, push community upvotes, place cases on hold with a written rationale,
-            stream field reports, and watch Socket.io alerts update the board in real time.
+            Submit complaint assets, push community upvotes, place cases on hold
+            with a written rationale, stream field reports, and watch Socket.io
+            alerts update the board in real time.
           </p>
 
           <div className="hero-actions">
-            <button className="secondary-btn" type="button" onClick={loadComplaints} disabled={saving}>
+            <button
+              className="secondary-btn"
+              type="button"
+              onClick={loadComplaints}
+              disabled={saving}
+            >
               Refresh board
             </button>
             <span className="status-chip">Socket connected to {socketUrl}</span>
@@ -602,7 +708,10 @@ const Home = () => {
 
               <label className="field filter-field">
                 <span>Category</span>
-                <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+                <select
+                  value={categoryFilter}
+                  onChange={(event) => setCategoryFilter(event.target.value)}
+                >
                   <option value="">All categories</option>
                   {complaintCategories.map((category) => (
                     <option key={category} value={category}>
@@ -614,7 +723,10 @@ const Home = () => {
 
               <label className="field filter-field">
                 <span>Status</span>
-                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                >
                   <option value="">All statuses</option>
                   {complaintStatuses.map((status) => (
                     <option key={status} value={status}>
@@ -644,10 +756,20 @@ const Home = () => {
             </div>
 
             <div className="filter-actions">
-              <button className="secondary-btn" type="button" onClick={loadComplaints} disabled={saving}>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={loadComplaints}
+                disabled={saving}
+              >
                 Apply filters
               </button>
-              <button className="ghost-btn" type="button" onClick={resetFilters} disabled={saving}>
+              <button
+                className="ghost-btn"
+                type="button"
+                onClick={resetFilters}
+                disabled={saving}
+              >
                 Reset filters
               </button>
             </div>
@@ -699,7 +821,12 @@ const Home = () => {
               <input
                 type="text"
                 value={createForm.citizenName}
-                onChange={(event) => setCreateForm((current) => ({ ...current, citizenName: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    citizenName: event.target.value,
+                  }))
+                }
                 required
               />
             </label>
@@ -709,7 +836,12 @@ const Home = () => {
               <input
                 type="email"
                 value={createForm.citizenEmail}
-                onChange={(event) => setCreateForm((current) => ({ ...current, citizenEmail: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    citizenEmail: event.target.value,
+                  }))
+                }
                 required
               />
             </label>
@@ -719,7 +851,12 @@ const Home = () => {
               <input
                 type="text"
                 value={createForm.title}
-                onChange={(event) => setCreateForm((current) => ({ ...current, title: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
+                }
                 required
               />
             </label>
@@ -728,7 +865,12 @@ const Home = () => {
               <span>Category</span>
               <select
                 value={createForm.category}
-                onChange={(event) => setCreateForm((current) => ({ ...current, category: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    category: event.target.value,
+                  }))
+                }
               >
                 {complaintCategories.map((category) => (
                   <option key={category} value={category}>
@@ -743,7 +885,12 @@ const Home = () => {
               <input
                 type="text"
                 value={createForm.ward}
-                onChange={(event) => setCreateForm((current) => ({ ...current, ward: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    ward: event.target.value,
+                  }))
+                }
                 placeholder="Ward 12"
               />
             </label>
@@ -753,7 +900,12 @@ const Home = () => {
               <textarea
                 rows="4"
                 value={createForm.description}
-                onChange={(event) => setCreateForm((current) => ({ ...current, description: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
                 required
               />
             </label>
@@ -762,7 +914,12 @@ const Home = () => {
               <span>Priority</span>
               <select
                 value={createForm.priorityLevel}
-                onChange={(event) => setCreateForm((current) => ({ ...current, priorityLevel: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    priorityLevel: event.target.value,
+                  }))
+                }
               >
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -778,7 +935,12 @@ const Home = () => {
                 min="1"
                 step="0.5"
                 value={createForm.severityCoefficient}
-                onChange={(event) => setCreateForm((current) => ({ ...current, severityCoefficient: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    severityCoefficient: event.target.value,
+                  }))
+                }
               />
             </label>
 
@@ -788,7 +950,12 @@ const Home = () => {
                 type="number"
                 step="any"
                 value={createForm.latitude}
-                onChange={(event) => setCreateForm((current) => ({ ...current, latitude: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    latitude: event.target.value,
+                  }))
+                }
                 required
               />
             </label>
@@ -799,7 +966,12 @@ const Home = () => {
                 type="number"
                 step="any"
                 value={createForm.longitude}
-                onChange={(event) => setCreateForm((current) => ({ ...current, longitude: event.target.value }))}
+                onChange={(event) =>
+                  setCreateForm((current) => ({
+                    ...current,
+                    longitude: event.target.value,
+                  }))
+                }
                 required
               />
             </label>
@@ -810,7 +982,9 @@ const Home = () => {
                 type="file"
                 multiple
                 accept="image/*"
-                onChange={(event) => setCreateFiles(Array.from(event.target.files || []))}
+                onChange={(event) =>
+                  setCreateFiles(Array.from(event.target.files || []))
+                }
               />
             </label>
           </div>
@@ -832,12 +1006,16 @@ const Home = () => {
             {alerts.length ? (
               alerts.map((alert) => (
                 <article className="alert-item" key={alert.id}>
-                  <span className={`alert-pill alert-${alert.type}`}>{alert.type}</span>
+                  <span className={`alert-pill alert-${alert.type}`}>
+                    {alert.type}
+                  </span>
                   <p>{alert.message}</p>
                 </article>
               ))
             ) : (
-              <div className="empty-state">Waiting for live alerts from complaint activity.</div>
+              <div className="empty-state">
+                Waiting for live alerts from complaint activity.
+              </div>
             )}
           </div>
 
@@ -848,7 +1026,10 @@ const Home = () => {
             <div className="alert-list compact-list">
               {slaBreaches.length ? (
                 slaBreaches.slice(0, 5).map((breach) => (
-                  <article className="alert-item" key={`${breach.complaintId}-${breach.ageHours}`}>
+                  <article
+                    className="alert-item"
+                    key={`${breach.complaintId}-${breach.ageHours}`}
+                  >
                     <span className="alert-pill alert-sla-breach">SLA</span>
                     <p>
                       {breach.title} ({breach.ward})
@@ -856,7 +1037,9 @@ const Home = () => {
                   </article>
                 ))
               ) : (
-                <div className="empty-state">No active SLA breaches right now.</div>
+                <div className="empty-state">
+                  No active SLA breaches right now.
+                </div>
               )}
             </div>
           </div>
@@ -867,14 +1050,18 @@ const Home = () => {
               <div className="heatmap-summary">
                 <strong>{topHotspot.ward}</strong>
                 <p>
-                  {topHotspot.complaintCount} high-priority complaints, avg score {topHotspot.avgPriorityScore}
+                  {topHotspot.complaintCount} high-priority complaints, avg
+                  score {topHotspot.avgPriorityScore}
                 </p>
                 <small>
-                  Center: {topHotspot.center?.lat?.toFixed?.(4)}, {topHotspot.center?.lng?.toFixed?.(4)}
+                  Center: {topHotspot.center?.lat?.toFixed?.(4)},{" "}
+                  {topHotspot.center?.lng?.toFixed?.(4)}
                 </small>
               </div>
             ) : (
-              <div className="empty-state">No high-priority geographic hotspots yet.</div>
+              <div className="empty-state">
+                No high-priority geographic hotspots yet.
+              </div>
             )}
 
             <div className="hotspot-list">
@@ -904,7 +1091,11 @@ const Home = () => {
                   key={complaint._id}
                   className={`complaint-card ${selectedComplaint?._id === complaint._id ? "selected" : ""}`}
                 >
-                  <button type="button" className="card-select" onClick={() => setSelectedComplaintId(complaint._id)}>
+                  <button
+                    type="button"
+                    className="card-select"
+                    onClick={() => setSelectedComplaintId(complaint._id)}
+                  >
                     <div>
                       <strong>{complaint.title}</strong>
                       <p>
@@ -912,7 +1103,9 @@ const Home = () => {
                       </p>
                     </div>
 
-                    <span className="score-badge">{complaint.priorityScore || 0}</span>
+                    <span className="score-badge">
+                      {complaint.priorityScore || 0}
+                    </span>
                   </button>
 
                   <div className="complaint-meta">
@@ -922,7 +1115,9 @@ const Home = () => {
                     <span>{complaint.holdState}</span>
                   </div>
 
-                  <p className="complaint-description">{complaint.description}</p>
+                  <p className="complaint-description">
+                    {complaint.description}
+                  </p>
 
                   <div className="complaint-actions">
                     <button
@@ -945,14 +1140,20 @@ const Home = () => {
                     >
                       <FaArrowDown /> {complaint.downvotes || 0}
                     </button>
-                    <button type="button" className="ghost-btn" onClick={() => setSelectedComplaintId(complaint._id)}>
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={() => setSelectedComplaintId(complaint._id)}
+                    >
                       Inspect
                     </button>
                   </div>
                 </article>
               ))
             ) : (
-              <div className="empty-state">No complaints yet. Submit the first one from the intake form.</div>
+              <div className="empty-state">
+                No complaints yet. Submit the first one from the intake form.
+              </div>
             )}
           </div>
         </aside>
@@ -968,47 +1169,64 @@ const Home = () => {
               </div>
 
               <div className="detail-badges">
-                <span className="status-chip">Score {selectedComplaint.priorityScore || 0}</span>
-                <span className="status-chip">{selectedComplaint.priorityLevel}</span>
+                <span className="status-chip">
+                  Score {selectedComplaint.priorityScore || 0}
+                </span>
+                <span className="status-chip">
+                  {selectedComplaint.priorityLevel}
+                </span>
                 <span className="status-chip">{selectedComplaint.status}</span>
               </div>
             </div>
 
             <div className="detail-grid">
               <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Public discussion</h3>
-                <span className="meta-pill comment-pill">
-                  <FaCommentDots /> {selectedComplaint.comments?.length || 0}
-                </span>
-              </div>
+                <div className="detail-card-header">
+                  <h3>Public discussion</h3>
+                  <span className="meta-pill comment-pill">
+                    <FaCommentDots /> {selectedComplaint.comments?.length || 0}
+                  </span>
+                </div>
 
-              <div className="stack">
-                <label className="field">
-                  <span>Public comment</span>
-                  <textarea
-                    rows="3"
-                    value={commentDraft}
-                    onChange={(event) => setCommentDraft(event.target.value)}
-                    placeholder="Citizens can comment on the complaint thread..."
-                  />
-                </label>
+                <div className="stack">
+                  <label className="field">
+                    <span>Public comment</span>
+                    <textarea
+                      rows="3"
+                      value={commentDraft}
+                      onChange={(event) => setCommentDraft(event.target.value)}
+                      placeholder="Citizens can comment on the complaint thread..."
+                    />
+                  </label>
 
-                <button type="button" className="primary-btn" onClick={() => handleCommentSubmit("public")} disabled={saving}>
-                  Post public comment
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    onClick={() => handleCommentSubmit("public")}
+                    disabled={saving}
+                  >
+                    Post public comment
+                  </button>
+                </div>
 
-              <div className="message-feed">
-                {(selectedComplaint.comments || []).slice(-5).reverse().map((comment, index) => (
-                  <article className="message-row" key={`${comment.createdAt || index}-${index}`}>
-                    <div className="message-meta">
-                      <span className="role-chip">{comment.authorRole || "citizen"}</span>
-                      <strong>{comment.authorName}</strong>
-                    </div>
-                    <p>{comment.body}</p>
-                  </article>
-                  ))}
+                <div className="message-feed">
+                  {(selectedComplaint.comments || [])
+                    .slice(-5)
+                    .reverse()
+                    .map((comment, index) => (
+                      <article
+                        className="message-row"
+                        key={`${comment.createdAt || index}-${index}`}
+                      >
+                        <div className="message-meta">
+                          <span className="role-chip">
+                            {comment.authorRole || "citizen"}
+                          </span>
+                          <strong>{comment.authorName}</strong>
+                        </div>
+                        <p>{comment.body}</p>
+                      </article>
+                    ))}
                 </div>
               </div>
 
@@ -1016,7 +1234,8 @@ const Home = () => {
                 <div className="detail-card-header">
                   <h3>Internal coordination</h3>
                   <span className="meta-pill internal-pill">
-                    <FaUserShield /> {selectedComplaint.chatMessages?.length || 0}
+                    <FaUserShield />{" "}
+                    {selectedComplaint.chatMessages?.length || 0}
                   </span>
                 </div>
                 <div className="stack">
@@ -1030,22 +1249,41 @@ const Home = () => {
                     />
                   </label>
 
-                  <button type="button" className="secondary-btn" onClick={() => handleCommentSubmit("internal")} disabled={saving}>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => handleCommentSubmit("internal")}
+                    disabled={saving}
+                  >
                     Send internal message
                   </button>
                 </div>
 
                 <div className="message-feed">
-                  {(selectedComplaint.chatMessages || []).slice(-5).reverse().map((message, index) => (
-                    <article className="message-row" key={`${message.createdAt || index}-${index}`}>
-                      <div className="message-meta">
-                        <span className={`role-chip ${message.channel || "internal"}`}>{message.authorRole || "citizen"}</span>
-                        <strong>{message.authorName}</strong>
-                        {message.channel && <span className="channel-pill">{message.channel}</span>}
-                      </div>
-                      <p>{message.body}</p>
-                    </article>
-                  ))}
+                  {(selectedComplaint.chatMessages || [])
+                    .slice(-5)
+                    .reverse()
+                    .map((message, index) => (
+                      <article
+                        className="message-row"
+                        key={`${message.createdAt || index}-${index}`}
+                      >
+                        <div className="message-meta">
+                          <span
+                            className={`role-chip ${message.channel || "internal"}`}
+                          >
+                            {message.authorRole || "citizen"}
+                          </span>
+                          <strong>{message.authorName}</strong>
+                          {message.channel && (
+                            <span className="channel-pill">
+                              {message.channel}
+                            </span>
+                          )}
+                        </div>
+                        <p>{message.body}</p>
+                      </article>
+                    ))}
                 </div>
               </div>
 
@@ -1053,20 +1291,36 @@ const Home = () => {
                 <div className="detail-card-header">
                   <h3>Live voters</h3>
                   <div className="vote-chip-row">
-                    <span className="vote-pill vote-up"><FaArrowUp /> {selectedComplaint.upvotes || 0}</span>
-                    <span className="vote-pill vote-down"><FaArrowDown /> {selectedComplaint.downvotes || 0}</span>
+                    <span className="vote-pill vote-up">
+                      <FaArrowUp /> {selectedComplaint.upvotes || 0}
+                    </span>
+                    <span className="vote-pill vote-down">
+                      <FaArrowDown /> {selectedComplaint.downvotes || 0}
+                    </span>
                   </div>
                 </div>
                 <div className="supporter-list">
-                  {(selectedComplaint.votes || []).slice(-8).reverse().map((vote, index) => (
-                    <div className="supporter-row" key={`${vote.supporterKey}-${index}`}>
-                      <span className={`supporter-badge vote-${vote.voteType}`}>{getVoteTypeLabel(vote.voteType)}</span>
-                      <div className="supporter-info">
-                        <strong>{getSupporterLabel(vote)}</strong>
-                        <span className="supporter-meta">{getSupporterRole(vote)}</span>
+                  {(selectedComplaint.votes || [])
+                    .slice(-8)
+                    .reverse()
+                    .map((vote, index) => (
+                      <div
+                        className="supporter-row"
+                        key={`${vote.supporterKey}-${index}`}
+                      >
+                        <span
+                          className={`supporter-badge vote-${vote.voteType}`}
+                        >
+                          {getVoteTypeLabel(vote.voteType)}
+                        </span>
+                        <div className="supporter-info">
+                          <strong>{getSupporterLabel(vote)}</strong>
+                          <span className="supporter-meta">
+                            {getSupporterRole(vote)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                   {!(selectedComplaint.votes || []).length && (
                     <div className="empty-state">No votes recorded yet.</div>
                   )}
@@ -1086,22 +1340,38 @@ const Home = () => {
                 </label>
 
                 <div className="button-row">
-                  <button type="button" className="secondary-btn" onClick={handleHoldComplaint} disabled={saving}>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={handleHoldComplaint}
+                    disabled={saving}
+                  >
                     Place on hold
                   </button>
-                  <button type="button" className="ghost-btn" onClick={handleReleaseComplaint} disabled={saving}>
+                  <button
+                    type="button"
+                    className="ghost-btn"
+                    onClick={handleReleaseComplaint}
+                    disabled={saving}
+                  >
                     Release hold
                   </button>
                 </div>
 
                 <div className="ledger-preview">
                   <strong>Public ledger</strong>
-                  {(selectedComplaint.publicLedger || []).slice(-5).reverse().map((entry, index) => (
-                    <article className="ledger-row" key={`${entry.createdAt || index}-${index}`}>
-                      <span>{entry.action}</span>
-                      <p>{entry.message}</p>
-                    </article>
-                  ))}
+                  {(selectedComplaint.publicLedger || [])
+                    .slice(-5)
+                    .reverse()
+                    .map((entry, index) => (
+                      <article
+                        className="ledger-row"
+                        key={`${entry.createdAt || index}-${index}`}
+                      >
+                        <span>{entry.action}</span>
+                        <p>{entry.message}</p>
+                      </article>
+                    ))}
                 </div>
               </div>
 
@@ -1124,7 +1394,9 @@ const Home = () => {
                     type="file"
                     multiple
                     accept="image/*"
-                    onChange={(event) => setBeforeFiles(Array.from(event.target.files || []))}
+                    onChange={(event) =>
+                      setBeforeFiles(Array.from(event.target.files || []))
+                    }
                   />
                 </label>
 
@@ -1134,7 +1406,9 @@ const Home = () => {
                     type="file"
                     multiple
                     accept="image/*"
-                    onChange={(event) => setAfterFiles(Array.from(event.target.files || []))}
+                    onChange={(event) =>
+                      setAfterFiles(Array.from(event.target.files || []))
+                    }
                   />
                 </label>
 
@@ -1143,18 +1417,27 @@ const Home = () => {
                 </button>
 
                 <div className="report-list">
-                  {(selectedComplaint.beforeAfterReports || []).slice(-3).reverse().map((report, index) => (
-                    <article className="report-row" key={`${report.createdAt || index}-${index}`}>
-                      <strong>{report.submittedBy}</strong>
-                      <p>{report.note || "Field report uploaded."}</p>
-                    </article>
-                  ))}
+                  {(selectedComplaint.beforeAfterReports || [])
+                    .slice(-3)
+                    .reverse()
+                    .map((report, index) => (
+                      <article
+                        className="report-row"
+                        key={`${report.createdAt || index}-${index}`}
+                      >
+                        <strong>{report.submittedBy}</strong>
+                        <p>{report.note || "Field report uploaded."}</p>
+                      </article>
+                    ))}
                 </div>
               </form>
             </div>
           </>
         ) : (
-          <div className="empty-state">Select a complaint to inspect comments, internal chat, holds, and field reports.</div>
+          <div className="empty-state">
+            Select a complaint to inspect comments, internal chat, holds, and
+            field reports.
+          </div>
         )}
       </section>
     </div>

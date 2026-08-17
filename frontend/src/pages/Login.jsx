@@ -22,9 +22,7 @@ const Login = () => {
       navigate("/");
     } catch (error) {
       setError(
-        error.response?.data?.message ||
-          error.message ||
-          "Login failed."
+        error.response?.data?.message || error.message || "Login failed.",
       );
     } finally {
       setSubmitting(false);
@@ -36,9 +34,7 @@ const Login = () => {
       <div className="auth-card">
         <h1>Welcome Back</h1>
 
-        <p className="subtitle">
-          Login to your Ekkotro account
-        </p>
+        <p className="subtitle">Login to your Ekkotro account</p>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -67,18 +63,13 @@ const Login = () => {
             />
           </div>
 
-          <button
-            className="primary-btn"
-            type="submit"
-            disabled={submitting}
-          >
+          <button className="primary-btn" type="submit" disabled={submitting}>
             {submitting ? "Logging in..." : "Login"}
           </button>
         </form>
 
         <p className="auth-footer">
-          Don't have an account?{" "}
-          <Link to="/register">Register</Link>
+          Don't have an account? <Link to="/register">Register</Link>
         </p>
       </div>
     </div>
