@@ -12,6 +12,7 @@ import ReportIssue from "./pages/ReportIssue";
 import Profile from "./pages/Profile";
 import ComplaintMap from "./pages/ComplaintMap";
 import OfficialUpdates from "./pages/OfficialUpdates";
+import GovernmentServices from "./pages/GovernmentServices";
 import NotificationCenter from "./components/NotificationCenter";
 import CreateFine from "./pages/CreateFine";
 import MyIssuedFines from "./pages/MyIssuedFines";
@@ -66,6 +67,14 @@ function App() {
           />
           <Route path="/profiles/:id" element={<Profile />} />
           <Route path="/map" element={<ComplaintMap />} />
+          <Route
+            path="/government-services"
+            element={
+              <ProtectedRoute>
+                <GovernmentServices />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/field-worker/completion-report"
             element={

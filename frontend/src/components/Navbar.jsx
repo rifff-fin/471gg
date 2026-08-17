@@ -26,6 +26,7 @@ const Navbar = () => {
             <Link to="/my-complaints">
               <FaFolderOpen /> My reports
             </Link>
+            <Link to="/government-services">Government services</Link>
             {["mayor", "councillor"].includes(user.role) && (
               <Link to="/official-updates">Official updates</Link>
             )}

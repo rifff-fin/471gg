@@ -57,10 +57,12 @@ app.use("/api/announcements", announcementRoutes);
 const fineRoutes = require("./routes/fineRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const completionReportRoutes = require("./routes/completionReportRoutes");
+const serviceRequestRoutes = require("./routes/serviceRequestRoutes");
 
 app.use("/api/fines", fineRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/completion-reports", completionReportRoutes);
+app.use("/api/service-requests", serviceRequestRoutes);
 
 app.use((error, req, res, next) => {
   if (error?.name === "MulterError") {
