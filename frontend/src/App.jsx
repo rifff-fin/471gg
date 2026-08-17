@@ -24,6 +24,10 @@ import Notifications from "./pages/Notifications";
 import UploadCompletionReport from "./pages/UploadCompletionReport";
 
 
+// Government Services Feature
+import GovernmentServices from "./pages/GovernmentServices";
+
+
 import { useAuth } from "./context/AuthContext";
 
 
@@ -79,129 +83,81 @@ function App() {
 
 
 
-
           <Route
-
             path="/"
-
             element={<Feed />}
-
           />
 
 
 
 
-
           <Route
-
             path="/complaints/:id"
-
             element={<ComplaintDetail />}
-
           />
 
 
 
 
-
           <Route
-
             path="/report"
-
             element={
-
               <ProtectedRoute>
-
                 <ReportIssue />
-
               </ProtectedRoute>
-
             }
-
           />
 
 
 
 
-
           <Route
-
             path="/my-complaints"
-
             element={
-
               <ProtectedRoute>
-
                 <MyComplaints />
-
               </ProtectedRoute>
-
             }
-
           />
 
 
 
 
-
           <Route
-
             path="/edit-complaint/:id"
-
             element={
-
               <ProtectedRoute>
-
                 <EditComplaint />
-
               </ProtectedRoute>
-
             }
-
           />
 
 
 
 
-
           <Route
-
             path="/profile"
-
             element={
-
               <ProtectedRoute>
-
                 <Profile />
-
               </ProtectedRoute>
-
             }
-
           />
 
 
 
 
-
           <Route
-
             path="/profiles/:id"
-
             element={<Profile />}
-
           />
 
 
 
 
-
           <Route
-
             path="/map"
-
             element={<ComplaintMap />}
-
           />
 
 
@@ -209,23 +165,42 @@ function App() {
 
 
 
-          {/* Citizen Notifications */}
+          {/* Notifications */}
 
           <Route
-
             path="/notifications"
-
             element={
-
               <ProtectedRoute>
-
                 <Notifications />
-
               </ProtectedRoute>
-
             }
-
           />
+
+
+
+
+
+
+
+
+          {/* Government Services */}
+
+          <Route
+            path="/government-services"
+            element={
+              <ProtectedRoute>
+                <GovernmentServices />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Dev-only public view for verification */}
+          <Route
+            path="/dev-government-services"
+            element={<GovernmentServices />}
+          />
+
+
 
 
 
@@ -236,19 +211,12 @@ function App() {
           {/* Field Worker Completion Report */}
 
           <Route
-
             path="/field-worker/completion-report"
-
             element={
-
               <RoleProtectedRoute allowedRoles={["field_worker"]}>
-
                 <UploadCompletionReport />
-
               </RoleProtectedRoute>
-
             }
-
           />
 
 
@@ -259,40 +227,30 @@ function App() {
 
 
 
-          <Route
+          {/* Login */}
 
+          <Route
             path="/login"
-
             element={
-
               user
-
               ? <Navigate to="/" replace />
-
               : <Login />
-
             }
-
           />
 
 
 
 
 
+          {/* Register */}
+
           <Route
-
             path="/register"
-
             element={
-
               user
-
               ? <Navigate to="/" replace />
-
               : <Register />
-
             }
-
           />
 
 
@@ -305,64 +263,39 @@ function App() {
 
           {/* Police Dashboard */}
 
-
           <Route
-
             path="/police"
-
             element={
-
               <RoleProtectedRoute allowedRoles={["police"]}>
-
                 <PoliceDashboard />
-
               </RoleProtectedRoute>
-
             }
-
           />
 
 
 
 
 
-
           <Route
-
             path="/police/create-fine"
-
             element={
-
               <RoleProtectedRoute allowedRoles={["police"]}>
-
                 <CreateFine />
-
               </RoleProtectedRoute>
-
             }
-
           />
 
 
 
 
 
-
-
           <Route
-
             path="/police/fines"
-
             element={
-
               <RoleProtectedRoute allowedRoles={["police"]}>
-
                 <MyIssuedFines />
-
               </RoleProtectedRoute>
-
             }
-
           />
 
 
@@ -373,26 +306,18 @@ function App() {
 
 
           <Route
-
             path="*"
-
             element={
-
               <Navigate to="/" replace />
-
             }
-
           />
-
 
 
 
         </Routes>
 
 
-
       </AppErrorBoundary>
-
 
 
     </>

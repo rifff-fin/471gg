@@ -14,8 +14,10 @@ const { registerSocketHandlers } = require("./services/realtime");
 connectDB();
 
 
+
 const app = express();
 const httpServer = http.createServer(app);
+
 
 
 
@@ -23,30 +25,24 @@ const httpServer = http.createServer(app);
 // Socket.io
 // =======================
 
+const DEFAULT_ORIGINS = [
+  "http://localhost:5176",
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
+const allowedOrigins = (process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean)
+  : DEFAULT_ORIGINS
+);
+
 const io = new Server(httpServer, {
-
   cors: {
-
-    origin: [
-      "http://localhost:5176",
-      "http://localhost:5173"
-    ],
-
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS"
-    ],
-
-    credentials: true
-
-  }
-
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  },
 });
-
 
 app.set("io", io);
 
@@ -57,34 +53,23 @@ registerSocketHandlers(io);
 
 
 
+
+
 // =======================
-// CORS Middleware
+// CORS
 // =======================
 
-app.use(cors({
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
-  origin: [
-    "http://localhost:5176",
-    "http://localhost:5173"
-  ],
 
-  methods: [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS"
-  ],
 
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization"
-  ],
-
-  credentials: true
-
-}));
 
 
 
@@ -101,12 +86,13 @@ app.use(express.json());
 app.use(
   express.urlencoded({
 
-    extended: true,
+    extended:true,
 
-    limit: "10mb"
+    limit:"10mb"
 
   })
 );
+
 
 
 
@@ -119,7 +105,9 @@ app.use(
 // Test Route
 // =======================
 
-app.get("/", (req,res)=>{
+
+app.get("/",(req,res)=>{
+
 
   res.status(200).json({
 
@@ -129,7 +117,9 @@ app.get("/", (req,res)=>{
 
   });
 
+
 });
+
 
 
 
@@ -146,7 +136,9 @@ app.get("/", (req,res)=>{
 
 // Authentication
 
-const authRoutes = require("./routes/authRoutes");
+const authRoutes =
+require("./routes/authRoutes");
+
 
 app.use(
   "/api/auth",
@@ -157,9 +149,13 @@ app.use(
 
 
 
+
+
 // Complaints
 
-const complaintRoutes = require("./routes/complaintRoutes");
+const complaintRoutes =
+require("./routes/complaintRoutes");
+
 
 app.use(
   "/api/complaints",
@@ -170,9 +166,13 @@ app.use(
 
 
 
+
+
 // Digital Fine
 
-const fineRoutes = require("./routes/fineRoutes");
+const fineRoutes =
+require("./routes/fineRoutes");
+
 
 app.use(
   "/api/fines",
@@ -183,9 +183,13 @@ app.use(
 
 
 
+
+
 // Notifications
 
-const notificationRoutes = require("./routes/notificationRoutes");
+const notificationRoutes =
+require("./routes/notificationRoutes");
+
 
 app.use(
   "/api/notifications",
@@ -196,9 +200,14 @@ app.use(
 
 
 
-// Completion Reports (Field Worker)
 
-const completionReportRoutes = require("./routes/completionReportRoutes");
+
+
+// Field Worker Completion Reports
+
+const completionReportRoutes =
+require("./routes/completionReportRoutes");
+
 
 app.use(
   "/api/completion-reports",
@@ -212,18 +221,40 @@ app.use(
 
 
 
+// Government Service Requests (Member-2)
+
+const serviceRequestRoutes =
+require("./routes/serviceRequestRoutes");
+
+
+app.use(
+  "/api/service-requests",
+  serviceRequestRoutes
+);
+
+
+
+
+
+
+
+
+
 // =======================
 // Error Handler
 // =======================
 
-app.use((error, req, res, next)=>{
+
+app.use((error,req,res,next)=>{
 
 
   console.error(error);
 
 
 
+
   if(error?.name === "MulterError"){
+
 
     return res.status(400).json({
 
@@ -233,7 +264,9 @@ app.use((error, req, res, next)=>{
 
     });
 
+
   }
+
 
 
 
@@ -246,6 +279,7 @@ app.use((error, req, res, next)=>{
     message:error.message || "Server Error"
 
   });
+
 
 
 });
@@ -262,6 +296,7 @@ app.use((error, req, res, next)=>{
 // Server
 // =======================
 
+
 const PORT = process.env.PORT || 1321;
 
 
@@ -270,7 +305,9 @@ httpServer.listen(PORT,()=>{
 
 
   console.log(
+
     `🚀 Server is running on http://localhost:${PORT}`
+
   );
 
 

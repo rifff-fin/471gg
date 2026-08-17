@@ -9,7 +9,8 @@ import {
   FaShieldAlt,
   FaUserShield,
   FaBell,
-  FaClipboardCheck
+  FaClipboardCheck,
+  FaLandmark
 } from "react-icons/fa";
 
 
@@ -61,12 +62,14 @@ const Navbar = () => {
 
 
 
-
       <div className="nav-links">
 
 
 
         {user ? <>
+
+
+
 
 
 
@@ -106,6 +109,18 @@ const Navbar = () => {
 
 
 
+              <Link to="/government-services">
+
+                <FaLandmark />
+
+                Government Services
+
+              </Link>
+
+
+
+
+
               <Link to="/notifications">
 
                 <FaBell />
@@ -128,24 +143,17 @@ const Navbar = () => {
 
 
 
-          {/* Field Worker Menu */}
+          {/* Field Worker */}
 
           {user.role === "field_worker" && (
 
-            <>
+            <Link to="/field-worker/completion-report">
 
+              <FaClipboardCheck />
 
-              <Link to="/field-worker/completion-report">
+              Completion Report
 
-                <FaClipboardCheck />
-
-                Completion Report
-
-              </Link>
-
-
-
-            </>
+            </Link>
 
           )}
 
@@ -157,7 +165,7 @@ const Navbar = () => {
 
 
 
-          {/* Common Map */}
+          {/* Map */}
 
           <Link to="/map">
 
@@ -175,7 +183,7 @@ const Navbar = () => {
 
 
 
-          {/* Police Menu */}
+          {/* Police */}
 
           {user.role === "police" && (
 
@@ -197,7 +205,7 @@ const Navbar = () => {
 
 
 
-          {/* Admin Menu */}
+          {/* Admin */}
 
           {user.role === "admin" && (
 
@@ -224,7 +232,6 @@ const Navbar = () => {
             {user.name} · {user.role || "citizen"}
 
           </span>
-
 
 
 
@@ -262,8 +269,6 @@ const Navbar = () => {
             Sign in
 
           </Link>
-
-
 
 
 
