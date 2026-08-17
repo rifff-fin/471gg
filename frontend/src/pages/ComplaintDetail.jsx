@@ -8,6 +8,7 @@ import { formatDate } from "../components/IssueCard";
 import PrivateChat from "../components/PrivateChat";
 import ComplaintLocationMap from "../components/ComplaintLocationMap";
 
+
 const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:1141";
 const CommentThread = ({ item, complaintId, canReply, onRefresh }) => {
   const [reply, setReply] = useState("");
@@ -18,11 +19,35 @@ const CommentThread = ({ item, complaintId, canReply, onRefresh }) => {
 const ComplaintDetail = () => {
   const { id } = useParams(); const { user } = useAuth(); const navigate = useNavigate();
   const [complaint, setComplaint] = useState(null); const [comment, setComment] = useState(""); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [notice, setNotice] = useState(""); const [showAllActivity, setShowAllActivity] = useState(false);
+  const [reportNote, setReportNote] = useState("");
+  const [beforeFiles, setBeforeFiles] = useState([]);
+  const [afterFiles, setAfterFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const load = async () => { try { const response = await api.get(`/complaints/${id}`); setComplaint(response.data.data); } catch (error) { setNotice(error.response?.data?.message || "This issue could not be found."); } finally { setLoading(false); } };
   useEffect(() => { load(); }, [id]);
   useEffect(() => { const socket = io(socketUrl, { transports: ["websocket", "polling"] }); socket.emit("complaint:join", { complaintId: id }); const refresh = (payload) => { if (String(payload?.complaintId) === String(id)) load(); }; ["complaint:updated", "complaint:voted", "complaint:commented", "complaint:comment-replied", "complaint:message", "complaint:held", "complaint:released", "complaint:report-uploaded"].forEach((event) => socket.on(event, refresh)); return () => { socket.emit("complaint:leave", { complaintId: id }); socket.disconnect(); }; }, [id]);
   const vote = async () => { if (!user) return navigate("/login"); setSaving(true); try { const response = await api.post(`/complaints/${id}/vote`, { type: "up" }); setComplaint(response.data.data); setNotice("Your support was recorded."); } catch (error) { setNotice(error.response?.data?.message || "Unable to register support."); } finally { setSaving(false); } };
   const postComment = async (event) => { event.preventDefault(); if (!user) return navigate("/login"); if (!comment.trim()) return; setSaving(true); try { await api.post(`/complaints/${id}/comments`, { body: comment.trim() }); await load(); setComment(""); } catch (error) { setNotice(error.response?.data?.message || "Could not post this update."); } finally { setSaving(false); } };
+
+  const submitReport = async (event) => {
+    event.preventDefault();
+    if (!user) return navigate("/login");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("note", reportNote || "");
+      for (const f of beforeFiles) fd.append("beforeImages", f);
+      for (const f of afterFiles) fd.append("afterImages", f);
+      const res = await api.post(`/complaints/${id}/reports`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      setNotice(res.data?.message || "Completion report uploaded");
+      setReportNote(""); setBeforeFiles([]); setAfterFiles([]);
+      await load();
+    } catch (err) {
+      setNotice(err.response?.data?.message || err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
   if (loading) return <main className="site-shell"><div className="empty-card">Loading issue…</div></main>;
   if (!complaint) return <main className="site-shell"><Link className="back-link" to="/"><FaArrowLeft /> Back to reports</Link><div className="empty-card">{notice}</div></main>;
   const ownerId = complaint.createdBy?._id || complaint.createdBy; const privateChatAllowed = user && (String(ownerId) === String(user._id || user.id) || ["officer", "field_worker", "councillor", "mayor", "admin"].includes(user.role)); const activities = (complaint.publicLedger || []).slice().reverse(); const visibleActivities = showAllActivity ? activities : activities.slice(0, 5);

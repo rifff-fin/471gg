@@ -549,7 +549,6 @@ const addCompletionReport = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) return res.status(404).json({ success: false, message: "Complaint not found" });
-
     const beforeImages = await toMediaList(req.files?.beforeImages || [], "before");
     const afterImages = await toMediaList(req.files?.afterImages || [], "after");
     const report = {
@@ -558,9 +557,8 @@ const addCompletionReport = async (req, res) => {
       beforeImages,
       afterImages,
     };
-
+    // Append report but do not change complaint status automatically
     complaint.beforeAfterReports.push(report);
-    complaint.status = req.body.status || complaint.status || "In Progress";
     complaint.publicLedger.push({
       action: "completion_report_uploaded",
       message: "Before-and-after completion report uploaded.",

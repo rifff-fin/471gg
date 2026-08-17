@@ -4,7 +4,9 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:1141/api",
 });
 
+
 api.interceptors.request.use((config) => {
+
   const token = localStorage.getItem("token");
 
   if (token) {
@@ -12,6 +14,8 @@ api.interceptors.request.use((config) => {
   }
 
   return config;
+
 });
+
 
 export default api;

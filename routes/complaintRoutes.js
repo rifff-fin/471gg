@@ -38,16 +38,7 @@ router.get("/:id/comments", getComplaintComments);
 router.post("/:id/messages", protect, addChatMessage);
 router.get("/:id/messages", protect, getChatMessages);
 router.get("/:id/ledger", getComplaintLedger);
-router.post(
-  "/:id/reports",
-  protect,
-  authorize("field_worker", "officer", "admin"),
-  upload.fields([
-    { name: "beforeImages", maxCount: 5 },
-    { name: "afterImages", maxCount: 5 },
-  ]),
-  addCompletionReport
-);
+// Completion reports route removed (feature reverted)
 
 router.post("/", protect, authorize("citizen"), upload.array("attachments", 8), createComplaint);
 router.get("/:id", getComplaintById);

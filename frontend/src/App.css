@@ -167,7 +167,181 @@ h1 {
 
 }
 
+/* =========================
+   Digital Fine Module
+========================= */
 
+.fine-container {
+  min-height: calc(100vh - 80px);
+  background: #f5f7f6;
+  padding: 50px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+
+.fine-card {
+  width: 100%;
+  max-width: 850px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.08);
+}
+
+
+.fine-card h1 {
+  font-size: 42px;
+  color: #123f36;
+  margin-bottom: 8px;
+}
+
+
+.subtitle {
+  color: #6b7c78;
+  margin-bottom: 35px;
+  font-size: 16px;
+}
+
+
+
+.fine-card form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+
+
+.fine-card label {
+  font-weight: 600;
+  color: #173b34;
+  margin-bottom: -12px;
+}
+
+
+
+.fine-card input,
+.fine-card select,
+.fine-card textarea {
+
+  width:100%;
+  border:1px solid #d7dfdc;
+  border-radius:12px;
+
+  padding:14px 16px;
+
+  font-size:15px;
+
+  outline:none;
+
+  background:#fff;
+
+  color:#1d302c;
+
+}
+
+
+
+.fine-card textarea {
+
+  min-height:120px;
+
+  resize:vertical;
+
+}
+
+
+/* Full width fields */
+
+.fine-card textarea,
+.fine-card button,
+.fine-card input[type="file"] {
+
+  grid-column: span 2;
+
+}
+
+
+
+.fine-card input:focus,
+.fine-card select:focus,
+.fine-card textarea:focus {
+
+  border-color:#0f8067;
+
+  box-shadow:0 0 0 3px rgba(15,128,103,0.12);
+
+}
+
+
+
+.fine-card button {
+
+  background:#087f5b;
+
+  color:white;
+
+  border:none;
+
+  padding:15px;
+
+  border-radius:12px;
+
+  font-size:16px;
+
+  font-weight:700;
+
+  cursor:pointer;
+
+  transition:.2s;
+
+}
+
+
+
+.fine-card button:hover {
+
+  background:#06684b;
+
+}
+
+
+
+/* Mobile */
+
+@media(max-width:768px){
+
+.fine-card{
+
+padding:25px;
+
+}
+
+
+.fine-card form{
+
+grid-template-columns:1fr;
+
+}
+
+
+.fine-card textarea,
+.fine-card button,
+.fine-card input[type="file"] {
+
+grid-column:span 1;
+
+}
+
+
+.fine-card h1{
+
+font-size:32px;
+
+}
+
+}
 
 /* Buttons */
 
@@ -269,3 +443,4 @@ label {
   font-weight:600;
 
 }
+

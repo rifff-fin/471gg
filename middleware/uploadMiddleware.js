@@ -1,22 +1,57 @@
 const multer = require("multer");
 
+
 const storage = multer.memoryStorage();
 
-const imageOnly = (req, file, callback) => {
-  if (file.mimetype && file.mimetype.startsWith("image/")) {
-    return callback(null, true);
+
+
+const fileFilter = (req, file, callback) => {
+
+  const allowedTypes = [
+    "image/",
+    "video/"
+  ];
+
+
+  const isAllowed = allowedTypes.some(type =>
+    file.mimetype.startsWith(type)
+  );
+
+
+  if (isAllowed) {
+
+    callback(null, true);
+
+  } else {
+
+    callback(
+      new multer.MulterError(
+        "LIMIT_UNEXPECTED_FILE",
+        file.fieldname
+      )
+    );
+
   }
 
-  return callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
 };
 
+
+
 const upload = multer({
+
   storage,
-  fileFilter: imageOnly,
+
+  fileFilter,
+
   limits: {
-    fileSize: 12 * 1024 * 1024,
-    files: 8,
-  },
+
+    fileSize: 50 * 1024 * 1024, // 50 MB
+
+    files: 1
+
+  }
+
 });
+
 
 module.exports = upload;
