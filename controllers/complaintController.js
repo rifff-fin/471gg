@@ -423,17 +423,19 @@ const reviewComplaintByOfficer = async (req, res) => {
       metadata: { status, signature },
     });
     const updated = await complaint.save();
-    await Notification.create({
-      user: complaint.createdBy,
-      title: `Your complaint is ${status}`,
-      message: `${req.user.name}: ${note.trim()}`,
-      type: "case_update",
-    });
-    emitUserNotification(complaint.createdBy, {
-      title: `Complaint ${status}`,
-      message: `${req.user.name}: ${note.trim()}`,
-      complaintId: String(complaint._id),
-    });
+    if (mongoose.isValidObjectId(complaint.createdBy)) {
+      await Notification.create({
+        user: complaint.createdBy,
+        title: `Your complaint is ${status}`,
+        message: `${req.user.name}: ${note.trim()}`,
+        type: "case_update",
+      });
+      emitUserNotification(complaint.createdBy, {
+        title: `Complaint ${status}`,
+        message: `${req.user.name}: ${note.trim()}`,
+        complaintId: String(complaint._id),
+      });
+    }
     emitComplaintEvent("complaint:updated", {
       complaintId: updated._id,
       complaint: updated,
