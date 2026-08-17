@@ -41,7 +41,7 @@ const io = new Server(httpServer, {
       "OPTIONS"
     ],
 
-    credentials:true
+    credentials: true
 
   }
 
@@ -56,18 +56,19 @@ registerSocketHandlers(io);
 
 
 
+
 // =======================
 // CORS Middleware
 // =======================
 
 app.use(cors({
 
-  origin:[
+  origin: [
     "http://localhost:5176",
     "http://localhost:5173"
   ],
 
-  methods:[
+  methods: [
     "GET",
     "POST",
     "PUT",
@@ -76,14 +77,15 @@ app.use(cors({
     "OPTIONS"
   ],
 
-  allowedHeaders:[
+  allowedHeaders: [
     "Content-Type",
     "Authorization"
   ],
 
-  credentials:true
+  credentials: true
 
 }));
+
 
 
 
@@ -99,12 +101,13 @@ app.use(express.json());
 app.use(
   express.urlencoded({
 
-    extended:true,
+    extended: true,
 
-    limit:"10mb"
+    limit: "10mb"
 
   })
 );
+
 
 
 
@@ -116,7 +119,7 @@ app.use(
 // Test Route
 // =======================
 
-app.get("/",(req,res)=>{
+app.get("/", (req,res)=>{
 
   res.status(200).json({
 
@@ -134,9 +137,11 @@ app.get("/",(req,res)=>{
 
 
 
+
 // =======================
 // Routes
 // =======================
+
 
 
 // Authentication
@@ -147,6 +152,7 @@ app.use(
   "/api/auth",
   authRoutes
 );
+
 
 
 
@@ -163,6 +169,7 @@ app.use(
 
 
 
+
 // Digital Fine
 
 const fineRoutes = require("./routes/fineRoutes");
@@ -171,6 +178,7 @@ app.use(
   "/api/fines",
   fineRoutes
 );
+
 
 
 
@@ -188,6 +196,19 @@ app.use(
 
 
 
+// Completion Reports (Field Worker)
+
+const completionReportRoutes = require("./routes/completionReportRoutes");
+
+app.use(
+  "/api/completion-reports",
+  completionReportRoutes
+);
+
+
+
+
+
 
 
 
@@ -195,7 +216,7 @@ app.use(
 // Error Handler
 // =======================
 
-app.use((error,req,res,next)=>{
+app.use((error, req, res, next)=>{
 
 
   console.error(error);
@@ -213,6 +234,8 @@ app.use((error,req,res,next)=>{
     });
 
   }
+
+
 
 
 
@@ -234,11 +257,13 @@ app.use((error,req,res,next)=>{
 
 
 
+
 // =======================
 // Server
 // =======================
 
 const PORT = process.env.PORT || 1321;
+
 
 
 httpServer.listen(PORT,()=>{

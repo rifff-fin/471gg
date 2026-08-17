@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router";
 
+
 import {
   FaFolderOpen,
   FaMap,
@@ -7,11 +8,14 @@ import {
   FaSignOutAlt,
   FaShieldAlt,
   FaUserShield,
-  FaBell
+  FaBell,
+  FaClipboardCheck
 } from "react-icons/fa";
 
 
 import { useAuth } from "../context/AuthContext";
+
+
 
 
 
@@ -20,7 +24,10 @@ const Navbar = () => {
 
   const { user, logout } = useAuth();
 
+
   const navigate = useNavigate();
+
+
 
 
 
@@ -31,6 +38,8 @@ const Navbar = () => {
     navigate("/login");
 
   };
+
+
 
 
 
@@ -51,6 +60,8 @@ const Navbar = () => {
 
 
 
+
+
       <div className="nav-links">
 
 
@@ -61,7 +72,9 @@ const Navbar = () => {
 
           {/* Citizen Menu */}
 
-          {user.role !== "police" && user.role !== "admin" && (
+          {user.role !== "police" &&
+           user.role !== "admin" &&
+           user.role !== "field_worker" && (
 
             <>
 
@@ -80,6 +93,7 @@ const Navbar = () => {
 
 
 
+
               <Link to="/my-complaints">
 
                 <FaFolderOpen />
@@ -87,6 +101,7 @@ const Navbar = () => {
                 My reports
 
               </Link>
+
 
 
 
@@ -100,6 +115,7 @@ const Navbar = () => {
               </Link>
 
 
+
             </>
 
           )}
@@ -110,6 +126,39 @@ const Navbar = () => {
 
 
 
+
+
+          {/* Field Worker Menu */}
+
+          {user.role === "field_worker" && (
+
+            <>
+
+
+              <Link to="/field-worker/completion-report">
+
+                <FaClipboardCheck />
+
+                Completion Report
+
+              </Link>
+
+
+
+            </>
+
+          )}
+
+
+
+
+
+
+
+
+
+          {/* Common Map */}
+
           <Link to="/map">
 
             <FaMap />
@@ -117,6 +166,8 @@ const Navbar = () => {
             Map
 
           </Link>
+
+
 
 
 
@@ -144,6 +195,8 @@ const Navbar = () => {
 
 
 
+
+
           {/* Admin Menu */}
 
           {user.role === "admin" && (
@@ -164,11 +217,15 @@ const Navbar = () => {
 
 
 
+
+
           <span className="nav-greeting">
 
             {user.name} · {user.role || "citizen"}
 
           </span>
+
+
 
 
 
@@ -198,11 +255,16 @@ const Navbar = () => {
 
 
 
+
+
           <Link to="/login">
 
             Sign in
 
           </Link>
+
+
+
 
 
 
@@ -221,6 +283,8 @@ const Navbar = () => {
 
 
 
+
+
         </>}
 
 
@@ -232,6 +296,7 @@ const Navbar = () => {
     </nav>
 
   );
+
 
 };
 
