@@ -12,6 +12,12 @@ import ReportIssue from "./pages/ReportIssue";
 import Profile from "./pages/Profile";
 import ComplaintMap from "./pages/ComplaintMap";
 import OfficialUpdates from "./pages/OfficialUpdates";
+import CreateFine from "./pages/CreateFine";
+import MyIssuedFines from "./pages/MyIssuedFines";
+import Notifications from "./pages/Notifications";
+import PoliceDashboard from "./pages/PoliceDashboard";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
+import UploadCompletionReport from "./pages/UploadCompletionReport";
 import { useAuth } from "./context/AuthContext";
 
 function App() {
@@ -58,6 +64,46 @@ function App() {
           />
           <Route path="/profiles/:id" element={<Profile />} />
           <Route path="/map" element={<ComplaintMap />} />
+          <Route
+            path="/field-worker/completion-report"
+            element={
+              <RoleProtectedRoute allowedRoles={["field_worker"]}>
+                <UploadCompletionReport />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/police"
+            element={
+              <RoleProtectedRoute allowedRoles={["police"]}>
+                <PoliceDashboard />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/police/create-fine"
+            element={
+              <RoleProtectedRoute allowedRoles={["police"]}>
+                <CreateFine />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/police/fines"
+            element={
+              <RoleProtectedRoute allowedRoles={["police"]}>
+                <MyIssuedFines />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/official-updates"
             element={

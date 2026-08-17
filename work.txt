@@ -2,7 +2,7 @@ Ekotro — CSE471 Group 02 work log
 Last updated: 2026-08-18
 
 Implemented on riff:
-- Merged branch requested: pending user approval (Git metadata write approval was declined).
+- Merged feature/field-worker-completion-report into riff on 2026-08-18, preserving the newer Cloudinary and official-update workflows while adding the branch's fine, notification, and standalone completion-report modules.
 - Field-worker completion reports already exist in riff. Cloudinary uploads now require valid Cloudinary credentials and use automatic format/quality optimization for secure delivery; data-URL fallback was removed.
 - Added official announcements: mayors and councillors can publish announcements, progress updates, and complaint responses within their assigned jurisdiction.
 - Official posts appear before the complaint feed. Socket.io sends live popup notifications only to authenticated mayor/councillor role rooms; the public receives the post but no popup.

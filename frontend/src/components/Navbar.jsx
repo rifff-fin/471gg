@@ -29,6 +29,13 @@ const Navbar = () => {
             {["mayor", "councillor"].includes(user.role) && (
               <Link to="/official-updates">Official updates</Link>
             )}
+            {user.role === "field_worker" && (
+              <Link to="/field-worker/completion-report">
+                Completion report
+              </Link>
+            )}
+            {user.role === "police" && <Link to="/police">Police desk</Link>}
+            <Link to="/notifications">Notifications</Link>
             <span className="nav-greeting">
               {user.name} · {user.role || "citizen"}
             </span>

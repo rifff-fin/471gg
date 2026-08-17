@@ -54,14 +54,20 @@ app.use("/api/complaints", complaintRoutes);
 const announcementRoutes = require("./routes/announcementRoutes");
 app.use("/api/announcements", announcementRoutes);
 
+const fineRoutes = require("./routes/fineRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const completionReportRoutes = require("./routes/completionReportRoutes");
+
+app.use("/api/fines", fineRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/completion-reports", completionReportRoutes);
+
 app.use((error, req, res, next) => {
   if (error?.name === "MulterError") {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Upload rejected: images only, up to 8 files, 12 MB each.",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Upload rejected: images only, up to 8 files, 12 MB each.",
+    });
   }
 
   return next(error);
