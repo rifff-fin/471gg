@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   FaBell,
@@ -9,6 +9,9 @@ import {
   FaUserPlus,
 } from "react-icons/fa6";
 import api from "../services/api";
+import { io } from "socket.io-client";
+import { SOCKET_URL } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const decisions = {
   approve: {
@@ -51,6 +54,8 @@ const relativeDate = (value) => {
 };
 
 const OfficerDashboard = () => {
+  const { token } = useAuth();
+  const coordinationSocket = useRef(null);
   const [cases, setCases] = useState([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
@@ -71,6 +76,14 @@ const OfficerDashboard = () => {
   const [selectedServiceRequestId, setSelectedServiceRequestId] = useState("");
   const [serviceStatus, setServiceStatus] = useState("Processing");
   const [serviceNote, setServiceNote] = useState("");
+  const [socketState, setSocketState] = useState("Connecting…");
+  const [liveEvents, setLiveEvents] = useState([]);
+  const [coordinationDraft, setCoordinationDraft] = useState("");
+  const [crewSearch, setCrewSearch] = useState("");
+  const [crewCandidates, setCrewCandidates] = useState([]);
+  const [selectedCrew, setSelectedCrew] = useState(null);
+  const [assignmentTask, setAssignmentTask] = useState("");
+  const [estimatedTime, setEstimatedTime] = useState("");
   const selected = cases.find((item) => item._id === selectedId) || cases[0];
   const selectedServiceRequest =
     serviceRequests.find((item) => item._id === selectedServiceRequestId) ||
@@ -119,6 +132,36 @@ const OfficerDashboard = () => {
     window.addEventListener("notification:received", refresh);
     return () => window.removeEventListener("notification:received", refresh);
   }, []);
+  useEffect(() => {
+    if (!token || !selected?._id) return undefined;
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      auth: { token },
+    });
+    coordinationSocket.current = socket;
+    const appendEvent = (type, payload) => {
+      if (String(payload?.complaintId) !== String(selected._id)) return;
+      setLiveEvents((items) => [
+        { id: `${type}-${payload.id || payload.assignmentId || Date.now()}`, type, payload },
+        ...items,
+      ].slice(0, 20));
+    };
+    socket.on("connect", () => {
+      setSocketState("Live");
+      socket.emit("coordination:join", { complaintId: selected._id });
+    });
+    socket.on("disconnect", () => setSocketState("Reconnecting…"));
+    socket.on("coordination:error", (payload) => setMessage(payload.message));
+    socket.on("coordination:message", (payload) => appendEvent("message", payload));
+    socket.on("coordination:assignment", (payload) => appendEvent("assignment", payload));
+    socket.on("coordination:assignment_response", (payload) => appendEvent("assignment_response", payload));
+    socket.on("coordination:progress", (payload) => appendEvent("progress", payload));
+    return () => {
+      socket.emit("coordination:leave", { complaintId: selected._id });
+      socket.disconnect();
+      coordinationSocket.current = null;
+    };
+  }, [token, selected?._id]);
   const stats = useMemo(
     () => ({
       pending: cases.filter((item) => item.status === "Pending").length,
@@ -250,6 +293,61 @@ const OfficerDashboard = () => {
       setMessage(response.data.message);
     } catch (error) {
       setMessage(error.response?.data?.message || "Could not update access.");
+    }
+  };
+  const searchCrew = async (event) => {
+    event.preventDefault();
+    if (crewSearch.trim().length < 2) {
+      setMessage("Enter at least two characters to find a field crew member.");
+      return;
+    }
+    try {
+      const response = await api.get("/officers/users", {
+        params: { search: crewSearch.trim() },
+      });
+      const fieldWorkers = (response.data.data || []).filter(
+        (person) => person.role === "field_worker",
+      );
+      setCrewCandidates(fieldWorkers);
+      if (!fieldWorkers.length) setMessage("No field crew member matched that search.");
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Could not find field crew.");
+    }
+  };
+  const sendCoordinationMessage = (event) => {
+    event.preventDefault();
+    if (!coordinationDraft.trim() || !selected) return;
+    coordinationSocket.current?.emit(
+      "coordination:message",
+      { complaintId: selected._id, body: coordinationDraft.trim() },
+      (result) => {
+        if (!result?.ok) setMessage(result?.message || "Message could not be sent.");
+        else setCoordinationDraft("");
+      },
+    );
+  };
+  const assignCrew = async (event) => {
+    event.preventDefault();
+    const crewEmail = selectedCrew?.email || crewSearch.trim();
+    if (!crewEmail || !assignmentTask.trim() || !selected) {
+      setMessage("Enter the field worker email and describe the repair task.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await api.post(`/complaints/${selected._id}/assignments`, {
+        crewMemberId: selectedCrew?._id,
+        crewEmail,
+        taskDescription: assignmentTask.trim(),
+        estimatedTime,
+      });
+      setAssignmentTask("");
+      setEstimatedTime("");
+      setMessage(response.data.message);
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Crew assignment could not be sent.");
+    } finally {
+      setBusy(false);
     }
   };
   return (
@@ -434,6 +532,54 @@ const OfficerDashboard = () => {
                   <em>{selected.department}</em>
                 </span>
               </div>
+              <section className="live-coordination" aria-live="polite">
+                <header>
+                  <div>
+                    <p className="eyebrow">Active maintenance bridge</p>
+                    <h3>Officer & field crew coordination</h3>
+                  </div>
+                  <span className={`live-state live-state--${socketState === "Live" ? "connected" : "pending"}`}>
+                    {socketState}
+                  </span>
+                </header>
+                <div className="coordination-grid">
+                  <section>
+                    <h4>Live internal updates</h4>
+                    <div className="coordination-feed">
+                      {liveEvents.length ? liveEvents.map((event) => (
+                        <article key={event.id}>
+                          <strong>{event.type.replaceAll("_", " ")}</strong>
+                          {event.type === "message" && <p>{event.payload.senderName}: {event.payload.body}</p>}
+                          {event.type === "assignment" && <p>{event.payload.assignedByName} assigned: {event.payload.taskDescription}</p>}
+                          {event.type === "assignment_response" && <p>{event.payload.crewMemberName} {event.payload.status} the assignment.</p>}
+                          {event.type === "progress" && <p>{event.payload.crewMemberName}: {event.payload.progressPercentage}% — {event.payload.currentPhase}</p>}
+                          <small>{new Date(event.payload.timestamp).toLocaleTimeString()}</small>
+                        </article>
+                      )) : <p className="completion-empty">No live coordination updates for this case yet.</p>}
+                    </div>
+                    <form className="coordination-compose" onSubmit={sendCoordinationMessage}>
+                      <textarea rows="2" value={coordinationDraft} onChange={(event) => setCoordinationDraft(event.target.value)} placeholder="Send an internal instruction to the assigned field crew…" />
+                      <button className="button button--dark" disabled={busy || socketState !== "Live" || !coordinationDraft.trim()}>Send update</button>
+                    </form>
+                  </section>
+                  <section>
+                    <h4>Assign field crew</h4>
+                    <form className="crew-search" onSubmit={searchCrew}>
+                      <input type="email" value={crewSearch} onChange={(event) => { setCrewSearch(event.target.value); setSelectedCrew(null); }} placeholder="Field worker email (e.g. field@worker.com)" />
+                      <button className="button button--quiet crew-search__button">Find crew</button>
+                    </form>
+                    {crewCandidates.length > 0 && <div className="crew-candidates">
+                      {crewCandidates.map((person) => <button type="button" key={person._id} className={selectedCrew?._id === person._id ? "is-selected" : ""} onClick={() => setSelectedCrew(person)}>{person.name}<small>{person.ward || "No ward"}</small></button>)}
+                    </div>}
+                    <form className="crew-assignment" onSubmit={assignCrew}>
+                      <p>{selectedCrew ? `Selected: ${selectedCrew.name} (${selectedCrew.email})` : "Enter the field worker email, or use Find crew to confirm the account."}</p>
+                      <textarea rows="2" value={assignmentTask} onChange={(event) => setAssignmentTask(event.target.value)} placeholder="Repair task and required action" />
+                      <input value={estimatedTime} onChange={(event) => setEstimatedTime(event.target.value)} placeholder="Estimated completion time (optional)" />
+                      <button className="button button--primary" disabled={busy || !crewSearch.trim() || !assignmentTask.trim()}>Send assignment</button>
+                    </form>
+                  </section>
+                </div>
+              </section>
               <div className="officer-collaboration">
                 <section>
                   <h3>Public conversation</h3>

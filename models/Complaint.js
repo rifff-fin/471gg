@@ -162,6 +162,7 @@ const complaintSchema = new mongoose.Schema(
     beforeAfterReports: { type: [reportSchema], default: [] },
     comments: { type: [commentSchema], default: [] },
     chatMessages: { type: [commentSchema], default: [] },
+    crewChatMessages: { type: [commentSchema], default: [] },
     publicLedger: { type: [ledgerEntrySchema], default: [] },
     officerNotes: { type: [officerNoteSchema], default: [] },
     location: {

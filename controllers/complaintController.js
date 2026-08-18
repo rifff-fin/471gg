@@ -6,7 +6,12 @@ const {
   calculateComplaintPriority,
   getPriorityLabel,
 } = require("../services/priority");
-const { emitComplaintEvent, emitAdminAlert } = require("../services/realtime");
+const {
+  emitComplaintEvent,
+  emitAdminAlert,
+  emitCrewChatMessage,
+  emitCrewAssignment,
+} = require("../services/realtime");
 const { emitUserNotification } = require("../services/realtime");
 const Notification = require("../models/Notification");
 
@@ -28,7 +33,6 @@ const routeDepartment = (category) =>
   departmentByCategory[category] || "Citizen Services";
 const authorityRoles = new Set([
   "officer",
-  "field_worker",
   "councillor",
   "mayor",
   "admin",
@@ -37,6 +41,8 @@ const canAccessPrivateChat = (complaint, user) => {
   const ownerId = complaint.createdBy?._id || complaint.createdBy;
   return String(ownerId) === String(user?.id) || authorityRoles.has(user?.role);
 };
+const canAccessCrewChat = (user) =>
+  ["officer", "admin", "field_worker"].includes(user?.role);
 
 const isTerminalStatus = (status = "") =>
   ["Resolved", "Closed"].includes(status);
@@ -1120,6 +1126,126 @@ const getChatMessages = async (req, res) => {
   }
 };
 
+const addCrewChatMessage = async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint)
+      return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!canAccessCrewChat(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: "Only officers and field workers can use crew coordination chat.",
+      });
+    }
+    const body = req.body.body?.trim();
+    if (!body || body.length > 1500) {
+      return res.status(400).json({
+        success: false,
+        message: "Message text is required and must be at most 1,500 characters.",
+      });
+    }
+    const message = {
+      authorId: req.user.id,
+      authorName: req.user.name || "Municipal staff",
+      authorRole: req.user.role,
+      body,
+      channel: "internal",
+    };
+    complaint.crewChatMessages.push(message);
+    const updatedComplaint = await complaint.save();
+    const storedMessage = updatedComplaint.crewChatMessages[
+      updatedComplaint.crewChatMessages.length - 1
+    ];
+    emitCrewChatMessage(updatedComplaint._id, storedMessage);
+    res.status(201).json({ success: true, message: "Crew message posted successfully", data: storedMessage });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getCrewChatMessages = async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id).select("crewChatMessages");
+    if (!complaint)
+      return res.status(404).json({ success: false, message: "Complaint not found" });
+    if (!canAccessCrewChat(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: "Only officers and field workers can view crew coordination chat.",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      count: complaint.crewChatMessages.length,
+      data: complaint.crewChatMessages,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const assignCrewToComplaint = async (req, res) => {
+  try {
+    const taskDescription = req.body.taskDescription?.trim();
+    const estimatedTime = req.body.estimatedTime?.trim()?.slice(0, 120) || "";
+    const crewMemberId = req.body.crewMemberId;
+    const crewEmail = req.body.crewEmail?.trim().toLowerCase();
+    if (!taskDescription || taskDescription.length > 1500 || (!crewMemberId && !crewEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a field worker email and a repair instruction of up to 1,500 characters.",
+      });
+    }
+    const complaint = await Complaint.findById(req.params.id).select("title");
+    if (!complaint)
+      return res.status(404).json({ success: false, message: "Complaint not found" });
+    const workerQuery = crewMemberId && mongoose.isValidObjectId(crewMemberId)
+      ? { _id: crewMemberId }
+      : { email: crewEmail };
+    const crewMember = await User.findOne(workerQuery).select("name email role");
+    if (!crewMember || crewMember.role !== "field_worker") {
+      return res.status(404).json({
+        success: false,
+        message: "No field worker account was found for that email.",
+      });
+    }
+    const assignment = {
+      id: `${complaint._id}-${Date.now()}`,
+      complaintId: String(complaint._id),
+      complaintTitle: complaint.title,
+      crewMemberId: String(crewMember._id),
+      crewMemberName: crewMember.name,
+      taskDescription,
+      estimatedTime,
+      assignedBy: req.user.id,
+      assignedByName: req.user.name || "Municipal Officer",
+      status: "assigned",
+      timestamp: new Date().toISOString(),
+    };
+    const message = `${assignment.assignedByName} assigned you to “${complaint.title}”. Instruction: ${taskDescription}${estimatedTime ? ` Estimated time: ${estimatedTime}.` : ""}`;
+    await Notification.create({
+      user: crewMember._id,
+      title: "New maintenance assignment",
+      message,
+      type: "case_update",
+    });
+    emitUserNotification(crewMember._id, {
+      title: "New maintenance assignment",
+      message,
+      complaintId: String(complaint._id),
+      assignment,
+    });
+    emitCrewAssignment(complaint._id, crewMember._id, assignment);
+    res.status(201).json({
+      success: true,
+      message: `Assignment sent to ${crewMember.name}.`,
+      data: assignment,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getComplaintLedger = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id).select(
@@ -1220,6 +1346,9 @@ module.exports = {
   verifyCompletionReport,
   addChatMessage,
   getChatMessages,
+  addCrewChatMessage,
+  getCrewChatMessages,
+  assignCrewToComplaint,
   getComplaintLedger,
   getAdminStream,
 };

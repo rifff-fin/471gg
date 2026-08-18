@@ -21,6 +21,9 @@ const {
   verifyCompletionReport,
   addChatMessage,
   getChatMessages,
+  addCrewChatMessage,
+  getCrewChatMessages,
+  assignCrewToComplaint,
   getComplaintLedger,
   getAdminStream,
 } = require("../controllers/complaintController");
@@ -62,6 +65,9 @@ router.post("/:id/comments/:commentId/replies", protect, replyToComment);
 router.get("/:id/comments", getComplaintComments);
 router.post("/:id/messages", protect, addChatMessage);
 router.get("/:id/messages", protect, getChatMessages);
+router.post("/:id/crew-messages", protect, authorize("officer", "admin", "field_worker"), addCrewChatMessage);
+router.get("/:id/crew-messages", protect, authorize("officer", "admin", "field_worker"), getCrewChatMessages);
+router.post("/:id/assignments", protect, authorize("officer", "admin"), assignCrewToComplaint);
 router.get("/:id/ledger", getComplaintLedger);
 router.post(
   "/:id/reports",

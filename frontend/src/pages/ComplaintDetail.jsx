@@ -11,7 +11,7 @@ import { io } from "socket.io-client";
 import api, { SOCKET_URL } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../components/IssueCard";
-import PrivateChat from "../components/PrivateChat";
+import CrewChat from "../components/CrewChat";
 import ComplaintLocationMap from "../components/ComplaintLocationMap";
 
 const socketUrl = SOCKET_URL;
@@ -112,6 +112,12 @@ const ComplaintDetail = () => {
       "complaint:released",
       "complaint:report-uploaded",
     ].forEach((event) => socket.on(event, refresh));
+    socket.on("maintenance:progress", (payload) => {
+      if (String(payload?.complaintId) !== String(id)) return;
+      setNotice(
+        `Live maintenance update: ${payload.progressPercentage}% complete — ${payload.currentPhase}.`,
+      );
+    });
     return () => {
       socket.emit("complaint:leave", { complaintId: id });
       socket.disconnect();
@@ -180,13 +186,6 @@ const ComplaintDetail = () => {
         <div className="empty-card">{notice}</div>
       </main>
     );
-  const ownerId = complaint.createdBy?._id || complaint.createdBy;
-  const privateChatAllowed =
-    user &&
-    (String(ownerId) === String(user._id || user.id) ||
-      ["officer", "field_worker", "councillor", "mayor", "admin"].includes(
-        user.role,
-      ));
   const activities = (complaint.publicLedger || []).slice().reverse();
   const visibleActivities = showAllActivity
     ? activities
@@ -441,8 +440,8 @@ const ComplaintDetail = () => {
           )}
         </div>
       </section>
-      {privateChatAllowed && (
-        <PrivateChat complaintId={id} currentUserId={user._id || user.id} />
+      {["officer", "admin", "field_worker"].includes(user?.role) && (
+        <CrewChat complaintId={id} currentUserId={user._id || user.id} />
       )}
     </main>
   );
