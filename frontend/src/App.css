@@ -82,6 +82,153 @@ h1 {
   margin-bottom: 25px;
 }
 
+.police-dashboard {
+  padding-bottom: 40px;
+}
+
+.police-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.police-title-stack h1 {
+  margin: 0;
+}
+
+.police-kicker {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+}
+
+.police-subtitle {
+  margin: 0 0 24px;
+  color: #4b5563;
+  font-size: 15px;
+}
+
+.police-header-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.police-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.police-metric {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  padding: 18px 20px;
+}
+
+.police-metric span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.police-metric strong {
+  font-size: 30px;
+  color: #111827;
+}
+
+.police-metric-blue {
+  border-top: 4px solid #2563eb;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.police-metric-amber {
+  border-top: 4px solid #d97706;
+  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 100%);
+}
+
+.police-metric-green {
+  border-top: 4px solid #059669;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.police-metric-red {
+  border-top: 4px solid #dc2626;
+  background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.police-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  padding: 22px;
+}
+
+.police-card-header h3 {
+  margin: 0 0 18px;
+  color: #111827;
+}
+
+.police-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.police-action-link {
+  display: block;
+}
+
+.police-action {
+  height: 100%;
+  border-radius: 14px;
+  border: 1px solid #dfe7f3;
+  background: #f8fafc;
+  padding: 18px 16px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.police-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.06);
+}
+
+.police-action h4 {
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.police-action p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.police-action-primary {
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+}
+
+.police-action-secondary {
+  background: linear-gradient(180deg, #f8fafc 0%, #f3f8ff 100%);
+}
+
+.secondary-btn {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #dbeafe;
+}
+
 /* Complaint Card */
 
 .complaint-card {

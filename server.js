@@ -15,23 +15,44 @@ connectDB();
 const app = express();
 const httpServer = http.createServer(app);
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CLIENT_ORIGIN || "*",
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+const allowedOrigins = Array.from(
+  new Set(
+    [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5174",
+      ...(process.env.CLIENT_ORIGIN || "")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    ],
+  ),
+);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+const io = new Server(httpServer, {
+  cors: corsOptions,
 });
 
 app.set("io", io);
 registerSocketHandlers(io);
 
 // Middleware
-app.use(
-  cors({
-    origin: process.env.CLIENT_ORIGIN || true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  }),
-);
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 

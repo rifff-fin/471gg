@@ -1,6 +1,13 @@
 const Fine = require("../models/Fine");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const { uploadBuffer } = require("../services/cloudinary");
+
+const uploadFineEvidence = async (file, folder) => {
+  if (!file) return "";
+  const result = await uploadBuffer(file.buffer, { folder: `ekotro/fines/${folder}` });
+  return result.secure_url;
+};
 
 // ===============================
 // Police create fine
@@ -46,6 +53,7 @@ const createFine = async (req, res) => {
 
     // Create Fine
 
+    const evidence = await uploadFineEvidence(req.file, "issued-evidence");
     const fine = await Fine.create({
       citizen: citizen._id,
 
@@ -59,7 +67,7 @@ const createFine = async (req, res) => {
 
       location,
 
-      evidence: "",
+      evidence,
     });
 
     console.log("FINE CREATED:", fine._id);
@@ -160,10 +168,51 @@ const getMyFines = async (req, res) => {
   }
 };
 
+const disputeFine = async (req, res) => {
+  try {
+    const reason = req.body.reason?.trim();
+    if (!reason || reason.length < 10) return res.status(400).json({ success: false, message: "Explain the dispute in at least 10 characters." });
+    const fine = await Fine.findOne({ _id: req.params.id, citizen: req.user.id });
+    if (!fine) return res.status(404).json({ success: false, message: "Fine not found." });
+    if (fine.status === "Paid" || fine.status === "Cancelled") return res.status(400).json({ success: false, message: "This fine can no longer be disputed." });
+    if (fine.disputeStatus === "Submitted") return res.status(409).json({ success: false, message: "This fine already has an open dispute." });
+    fine.disputeReason = reason;
+    fine.disputeEvidence = await uploadFineEvidence(req.file, "disputes");
+    fine.disputeStatus = "Submitted";
+    fine.disputedAt = new Date();
+    fine.reviewNote = "";
+    fine.reviewedAt = null;
+    fine.status = "Disputed";
+    await fine.save();
+    await Notification.create({ user: fine.officer, title: "Fine dispute submitted", message: `${req.user.name || "A citizen"} disputed the fine for ${fine.violationType}.`, type: "fine" });
+    return res.status(200).json({ success: true, message: "Your dispute was submitted for police review.", data: fine });
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+};
+
+const reviewDispute = async (req, res) => {
+  try {
+    const { decision, reviewNote = "" } = req.body;
+    if (!["accept", "reject"].includes(decision)) return res.status(400).json({ success: false, message: "Choose whether to accept or reject the dispute." });
+    const fine = await Fine.findOne({ _id: req.params.id, officer: req.user.id });
+    if (!fine) return res.status(404).json({ success: false, message: "Fine not found." });
+    if (fine.disputeStatus !== "Submitted") return res.status(400).json({ success: false, message: "This fine has no dispute awaiting review." });
+    const accepted = decision === "accept";
+    fine.disputeStatus = accepted ? "Accepted" : "Rejected";
+    fine.status = accepted ? "Cancelled" : "Unpaid";
+    fine.reviewNote = reviewNote.trim();
+    fine.reviewedAt = new Date();
+    await fine.save();
+    await Notification.create({ user: fine.citizen, title: `Fine dispute ${accepted ? "accepted" : "rejected"}`, message: accepted ? `Your fine for ${fine.violationType} was cancelled after review.` : `Your fine for ${fine.violationType} remains unpaid after review.`, type: "fine" });
+    return res.status(200).json({ success: true, message: "Dispute review recorded.", data: fine });
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+};
+
 module.exports = {
   createFine,
 
   getMyIssuedFines,
 
   getMyFines,
+  disputeFine,
+  reviewDispute,
 };
