@@ -12,6 +12,7 @@ import api, { SOCKET_URL } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../components/IssueCard";
 import CrewChat from "../components/CrewChat";
+import PrivateChat from "../components/PrivateChat";
 import ComplaintLocationMap from "../components/ComplaintLocationMap";
 
 const socketUrl = SOCKET_URL;
@@ -190,6 +191,12 @@ const ComplaintDetail = () => {
   const visibleActivities = showAllActivity
     ? activities
     : activities.slice(0, 5);
+  const currentUserId = user?._id || user?.id;
+  const reporterId = complaint.createdBy?._id || complaint.createdBy;
+  const canUsePrivateChat =
+    Boolean(user) &&
+    (String(reporterId) === String(currentUserId) ||
+      ["officer", "admin", "councillor", "mayor"].includes(user.role));
   return (
     <main className="site-shell detail-page">
       <Link className="back-link" to="/">
@@ -440,6 +447,9 @@ const ComplaintDetail = () => {
           )}
         </div>
       </section>
+      {canUsePrivateChat && (
+        <PrivateChat complaintId={id} currentUserId={currentUserId} />
+      )}
       {["officer", "admin", "field_worker"].includes(user?.role) && (
         <CrewChat complaintId={id} currentUserId={user._id || user.id} />
       )}
