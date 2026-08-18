@@ -42,9 +42,15 @@ const fineSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Unpaid", "Paid"],
+      enum: ["Unpaid", "Disputed", "Paid", "Cancelled"],
       default: "Unpaid",
     },
+    disputeStatus: { type: String, enum: ["None", "Submitted", "Accepted", "Rejected"], default: "None" },
+    disputeReason: { type: String, trim: true, maxlength: 1000, default: "" },
+    disputeEvidence: { type: String, default: "" },
+    disputedAt: { type: Date, default: null },
+    reviewedAt: { type: Date, default: null },
+    reviewNote: { type: String, trim: true, maxlength: 1000, default: "" },
   },
   {
     timestamps: true,

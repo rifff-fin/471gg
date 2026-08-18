@@ -11,6 +11,7 @@ const CreateFine = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [evidence, setEvidence] = useState(null);
 
   const handleChange = (e) => {
     setForm({
@@ -26,17 +27,13 @@ const CreateFine = () => {
     try {
       setLoading(true);
 
-      const fineData = {
-        citizenEmail: form.citizenEmail.trim(),
-
-        violationType: form.violationType,
-
-        description: form.description,
-
-        fineAmount: Number(form.fineAmount),
-
-        location: form.location,
-      };
+      const fineData = new FormData();
+      fineData.append("citizenEmail", form.citizenEmail.trim());
+      fineData.append("violationType", form.violationType);
+      fineData.append("description", form.description);
+      fineData.append("fineAmount", Number(form.fineAmount));
+      fineData.append("location", form.location);
+      if (evidence) fineData.append("evidence", evidence);
 
       console.log("Sending Fine Data:", fineData);
 
@@ -61,6 +58,7 @@ const CreateFine = () => {
 
         location: "",
       });
+      setEvidence(null);
     } catch (error) {
       console.error("Fine Error:", error);
 
@@ -151,6 +149,9 @@ const CreateFine = () => {
             onChange={handleChange}
             required
           />
+
+          <label>Photo Evidence (optional)</label>
+          <input type="file" accept="image/*" onChange={(event) => setEvidence(event.target.files?.[0] || null)} />
 
           <button type="submit" className="primary-btn" disabled={loading}>
             {loading ? "Issuing Fine..." : "Issue Fine"}

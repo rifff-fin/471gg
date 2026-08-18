@@ -3633,6 +3633,20 @@ body {
   border-radius: 8px;
   object-fit: cover;
 }
+.fine-page { padding-bottom: 48px; }
+.fine-page > h1 { margin-bottom: 8px; }
+.fine-page > h1 + p { margin: 0 0 24px; color: #64736a; }
+.fine-page > .fine-card, .fine-list > .fine-card { margin-bottom: 16px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 14px; background: #fff; box-shadow: 0 10px 25px rgba(15, 23, 42, .04); }
+.fine-page > .fine-card h2, .fine-page > .fine-card h3 { margin: 0 0 10px; color: #172033; }
+.fine-page > .fine-card > p { color: #53625a; }
+.fine-page > .fine-card > p:first-of-type { line-height: 1.55; }
+.fine-page > .fine-card > hr { border: 0; border-top: 1px solid #e5e7eb; margin: 18px 0 0; }
+.fine-evidence { display: block; width: min(280px, 100%); max-height: 220px; margin: 12px 0; border-radius: 8px; object-fit: cover; }
+.fine-dispute { display: grid; gap: 10px; margin-top: 14px; padding: 14px; border: 1px solid #f0dca2; border-radius: 10px; background: #fffaf0; }
+.fine-dispute p { margin: 0; }
+.fine-timeline { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.fine-timeline span { padding: 6px 10px; border-left: 3px solid #1e7a65; border-radius: 4px; background: #f1f7f4; color: #285b4c; font-size: 13px; font-weight: 600; }
+@media (max-width: 640px) { .fine-page > .fine-card, .fine-list > .fine-card { padding: 16px; } }
 .completion-evidence {
   margin: 27px 0;
   padding: 20px;

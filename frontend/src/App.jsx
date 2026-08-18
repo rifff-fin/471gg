@@ -22,6 +22,7 @@ import PoliceDashboard from "./pages/PoliceDashboard";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import UploadCompletionReport from "./pages/UploadCompletionReport";
 import MayorDashboard from "./pages/MayorDashboard";
+import MyFines from "./pages/MyFines";
 import { useAuth } from "./context/AuthContext";
 
 function App() {
@@ -117,6 +118,7 @@ function App() {
               </RoleProtectedRoute>
             }
           />
+          <Route path="/my-fines" element={<RoleProtectedRoute allowedRoles={["citizen"]}><MyFines /></RoleProtectedRoute>} />
           <Route
             path="/notifications"
             element={

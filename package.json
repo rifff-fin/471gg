@@ -22,7 +22,10 @@
     "mongodb": "^7.5.0",
     "mongoose": "^9.7.4",
     "multer": "^2.0.1",
-    "socket.io": "^4.8.1"
+    "pdfkit": "^0.19.1",
+    "socket.io": "^4.8.1",
+    "socks": "^2.8.9",
+    "sslcommerz-lts": "^1.2.0"
   },
   "optionalDependencies": {
     "mongodb-memory-server": "^8.12.0"

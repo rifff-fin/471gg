@@ -39,4 +39,7 @@ router.get(
   fineController.getMyFines,
 );
 
+router.post("/:id/dispute", authMiddleware.protect, authMiddleware.authorize("citizen"), upload.single("evidence"), fineController.disputeFine);
+router.patch("/:id/dispute", authMiddleware.protect, authMiddleware.authorize("police"), fineController.reviewDispute);
+
 module.exports = router;

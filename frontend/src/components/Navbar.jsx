@@ -27,6 +27,7 @@ const Navbar = () => {
             <Link to="/my-complaints">
               <FaFolderOpen /> My reports
             </Link>
+            {user.role === "citizen" && <Link to="/my-fines">My fines</Link>}
             <Link to="/government-services">Government services</Link>
             <Link to="/official-updates">Community updates</Link>
             {user.role === "field_worker" && (
