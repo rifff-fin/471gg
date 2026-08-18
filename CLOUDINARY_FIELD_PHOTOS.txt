@@ -1,0 +1,42 @@
+MEMBER 3 — CLOUDINARY FIELD-WORK PHOTOS
+
+WHAT TO SHOW
+1. Log in as field worker.
+2. Open: http://localhost:5173/field-worker/completion-report
+3. Search and select a real complaint.
+4. Add before photo, after photo, and work note.
+5. Submit. The photos go to Cloudinary.
+6. Log in as officer and open /officer-dashboard.
+7. Show Before and After photos in Field-work evidence.
+8. Officer can Verify & mark done or Return to worker.
+9. Also show photos on the complaint page.
+
+SIMPLE EXPLANATION
+"The field worker does not type a fake complaint title. They search a real
+complaint and attach before/after evidence to it. Multer accepts images only
+and keeps them in memory. The backend streams the file to Cloudinary.
+Cloudinary returns a secure URL and public ID. We save those details inside the
+complaint, so officer and citizen can see the same evidence."
+
+IMPORTANT FRONTEND FILES
+frontend/src/pages/UploadCompletionReport.jsx
+  Field worker search/select complaint, choose photos, submit report.
+frontend/src/pages/OfficerDashboard.jsx
+  Shows Before/After images and verification buttons.
+frontend/src/pages/ComplaintDetail.jsx
+  Shows field-work evidence on the original complaint page.
+
+IMPORTANT BACKEND FILES
+services/cloudinary.js
+  Cloudinary connection and upload stream. Uses quality: auto:good.
+middleware/uploadMiddleware.js
+  Images only, memory upload, maximum 12 MB each.
+controllers/complaintController.js
+  addCompletionReport uploads photos and notifies officer.
+  verifyCompletionReport lets officer verify or return report.
+models/Complaint.js
+  beforeAfterReports stores URLs, worker, verification status and note.
+routes/complaintRoutes.js
+  POST /api/complaints/:id/reports
+  POST /api/complaints/:id/reports/:reportId/verify
+

@@ -27,6 +27,7 @@ const Navbar = () => {
             <Link to="/my-complaints">
               <FaFolderOpen /> My reports
             </Link>
+            {user.role === "citizen" && <Link to="/my-fines">My fines</Link>}
             <Link to="/government-services">Government services</Link>
             <Link to="/official-updates">Community updates</Link>
             {user.role === "field_worker" && (
@@ -37,7 +38,9 @@ const Navbar = () => {
             {user.role === "mayor" && (
               <Link to="/mayor-dashboard">Mayor dashboard</Link>
             )}
-            {user.role === "police" && <Link to="/police">Police desk</Link>}
+            {user.role === "police" && (
+              <Link to="/police">Police desk</Link>
+            )}
             {["officer", "admin"].includes(user.role) && (
               <Link to="/officer-dashboard">Officer desk</Link>
             )}

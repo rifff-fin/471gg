@@ -17,6 +17,7 @@ import OfficerDashboard from "./pages/OfficerDashboard";
 import NotificationCenter from "./components/NotificationCenter";
 import CreateFine from "./pages/CreateFine";
 import MyIssuedFines from "./pages/MyIssuedFines";
+import MyFines from "./pages/MyFines";
 import Notifications from "./pages/Notifications";
 import PoliceDashboard from "./pages/PoliceDashboard";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
@@ -114,6 +115,14 @@ function App() {
             element={
               <RoleProtectedRoute allowedRoles={["police"]}>
                 <MyIssuedFines />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-fines"
+            element={
+              <RoleProtectedRoute allowedRoles={["citizen"]}>
+                <MyFines />
               </RoleProtectedRoute>
             }
           />

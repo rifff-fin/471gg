@@ -1,0 +1,44 @@
+MEMBER 3 — MAYOR / COUNCILLOR OFFICIAL UPDATES
+
+WHAT TO SHOW
+1. Log in as mayor.
+2. Open: http://localhost:5173/mayor-dashboard
+3. Show local complaint situation: open, urgent, resolved cases.
+4. Publish announcement / progress update / complaint response.
+5. Show it on home page. It stays at top for 24 hours.
+6. Show /official-updates. Old posts stay there as past updates.
+
+SIMPLE EXPLANATION
+"Only mayor and councillor accounts can publish official updates. The backend
+checks the official's jurisdiction. If a post is linked to a complaint from a
+different ward, it blocks the post. A new post notifies citizens. The frontend
+shows it at the top of home for 24 hours, but does not delete it; it stays in
+the official archive."
+
+IMPORTANT FRONTEND FILES
+frontend/src/pages/MayorDashboard.jsx
+  Mayor dashboard: case monitoring, create/edit/delete post, pin response.
+frontend/src/pages/OfficialUpdates.jsx
+  Official post page and Cloudinary image upload control.
+frontend/src/components/OfficialAnnouncementList.jsx
+  Shows posts, comments, reactions, pinned mayor response, 24-hour filter.
+frontend/src/pages/Feed.jsx
+  Home page sends pinnedForHours={24}.
+frontend/src/pages/Profile.jsx
+  Mayor profile has link to mayor dashboard.
+
+IMPORTANT BACKEND FILES
+models/Announcement.js
+  Official post data: author, role, jurisdiction, type, complaint, images.
+controllers/announcementController.js
+  Creates post, checks jurisdiction, sends notifications, manages posts.
+routes/announcementRoutes.js
+  API routes for official updates.
+services/realtime.js
+  Live announcement update/delete events.
+
+USEFUL API ROUTES
+POST /api/announcements
+GET  /api/announcements/dashboard
+PATCH /api/announcements/:id
+DELETE /api/announcements/:id
