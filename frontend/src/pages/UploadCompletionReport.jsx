@@ -12,6 +12,7 @@ const UploadCompletionReport = () => {
   const [afterFiles, setAfterFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [submittedReport, setSubmittedReport] = useState(null);
   const findComplaints = async (term = search) => {
     try {
       const response = await api.get("/complaints", {
@@ -40,7 +41,11 @@ const UploadCompletionReport = () => {
       data.append("note", note.trim());
       beforeFiles.forEach((file) => data.append("beforeImages", file));
       afterFiles.forEach((file) => data.append("afterImages", file));
-      await api.post(`/complaints/${selected._id}/reports`, data);
+      const response = await api.post(
+        `/complaints/${selected._id}/reports`,
+        data,
+      );
+      setSubmittedReport(response.data.data?.report || null);
       setMessage(
         "Evidence submitted. The assigned officer has been notified for verification.",
       );
@@ -181,6 +186,30 @@ const UploadCompletionReport = () => {
                 : "Submit for officer verification"}
             </button>
           </form>
+          {submittedReport && (
+            <section
+              className="submitted-evidence"
+              aria-label="Submitted evidence preview"
+            >
+              <h3>Submitted evidence</h3>
+              <p>
+                Your photos are now attached to the selected complaint and
+                waiting for officer verification.
+              </p>
+              <div>
+                {[
+                  ...(submittedReport.beforeImages || []),
+                  ...(submittedReport.afterImages || []),
+                ].map((image) => (
+                  <img
+                    key={image.url}
+                    src={image.url}
+                    alt="Submitted field work evidence"
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </section>
       </div>
     </main>

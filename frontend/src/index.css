@@ -2715,6 +2715,19 @@ body {
   gap: 7px;
   overflow-x: auto;
 }
+.evidence-images > div {
+  display: grid;
+  grid-template-columns: repeat(3, 62px);
+  gap: 6px;
+  min-width: max-content;
+}
+.evidence-images > div small {
+  grid-column: 1 / -1;
+  color: #718078;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
 .evidence-images img {
   width: 62px;
   height: 62px;
@@ -2838,6 +2851,104 @@ body {
   padding: 11px;
   font: inherit;
   resize: vertical;
+}
+.submitted-evidence {
+  margin-top: 20px;
+  padding-top: 17px;
+  border-top: 1px solid var(--line);
+}
+.submitted-evidence h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.submitted-evidence p {
+  margin: 6px 0 10px;
+  color: #64736a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.submitted-evidence > div {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+.submitted-evidence img {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.completion-evidence {
+  margin: 27px 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfcfb;
+}
+.completion-evidence__heading,
+.completion-evidence__report > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+.completion-evidence__heading h2 {
+  margin: 4px 0 0;
+  font-size: 21px;
+}
+.completion-evidence__heading > span {
+  color: #718078;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.completion-evidence__report {
+  margin-top: 15px;
+  padding: 15px;
+  border: 1px solid #e4ebe6;
+  border-radius: 9px;
+  background: white;
+}
+.completion-evidence__report header small {
+  display: block;
+  margin-top: 3px;
+  color: #718078;
+  font-size: 11px;
+}
+.completion-evidence__report > p {
+  color: #53625a;
+  line-height: 1.5;
+}
+.completion-evidence__groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.completion-evidence__groups h3 {
+  margin: 0 0 8px;
+  color: #53625a;
+  font-size: 13px;
+}
+.completion-evidence__groups .image-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.completion-evidence__groups img {
+  width: 100%;
+  aspect-ratio: 1.2;
+  border-radius: 7px;
+  object-fit: cover;
+}
+.completion-evidence__decision {
+  margin-bottom: 0;
+  padding: 10px;
+  border-radius: 7px;
+  background: #edf8f2;
+}
+@media (max-width: 560px) {
+  .completion-evidence__groups {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 900px) {
   .officer-collaboration,

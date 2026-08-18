@@ -162,7 +162,10 @@ const Feed = () => {
         </div>
       </section>
 
-      <OfficialAnnouncementList refreshKey={announcementKey} />
+      <OfficialAnnouncementList
+        refreshKey={announcementKey}
+        pinnedForHours={24}
+      />
 
       <section id="issues" className="feed-layout">
         <aside className="filter-card">

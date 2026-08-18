@@ -445,16 +445,26 @@ const OfficerDashboard = () => {
                           </div>
                           <p>{report.note || "No work note added."}</p>
                           <div className="evidence-images">
-                            {[
-                              ...(report.beforeImages || []),
-                              ...(report.afterImages || []),
-                            ].map((image) => (
-                              <img
-                                key={image.url}
-                                src={image.url}
-                                alt="Field-work evidence"
-                              />
-                            ))}
+                            <div>
+                              <small>Before</small>
+                              {(report.beforeImages || []).map((image) => (
+                                <img
+                                  key={image.url}
+                                  src={image.url}
+                                  alt="Before work evidence"
+                                />
+                              ))}
+                            </div>
+                            <div>
+                              <small>After</small>
+                              {(report.afterImages || []).map((image) => (
+                                <img
+                                  key={image.url}
+                                  src={image.url}
+                                  alt="After work evidence"
+                                />
+                              ))}
+                            </div>
                           </div>
                           {(report.verificationStatus || "Submitted") ===
                             "Submitted" && (

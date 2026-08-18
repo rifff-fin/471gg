@@ -9,10 +9,14 @@ const formatDate = (value) =>
     timeStyle: "short",
   }).format(new Date(value));
 
-const OfficialAnnouncementList = ({ refreshKey = 0 }) => {
+const OfficialAnnouncementList = ({
+  refreshKey = 0,
+  pinnedForHours = null,
+}) => {
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [drafts, setDrafts] = useState({});
+  const [now, setNow] = useState(Date.now());
   const loadPosts = async () => {
     try {
       const response = await api.get("/announcements");
@@ -24,6 +28,11 @@ const OfficialAnnouncementList = ({ refreshKey = 0 }) => {
   useEffect(() => {
     loadPosts();
   }, [refreshKey]);
+  useEffect(() => {
+    if (!pinnedForHours) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [pinnedForHours]);
   const updatePost = (id, patch) =>
     setPosts((current) =>
       current.map((post) => (post._id === id ? { ...post, ...patch } : post)),
@@ -46,18 +55,29 @@ const OfficialAnnouncementList = ({ refreshKey = 0 }) => {
     });
     setDrafts((current) => ({ ...current, [post._id]: "" }));
   };
-  if (!posts.length) return null;
+  const visiblePosts = pinnedForHours
+    ? posts.filter(
+        (post) =>
+          now - new Date(post.createdAt).getTime() <=
+          pinnedForHours * 60 * 60 * 1000,
+      )
+    : posts;
+  if (!visiblePosts.length) return null;
   return (
     <section className="official-feed" aria-label="Official community posts">
       <div className="official-feed__heading">
         <div>
           <p className="eyebrow">From your city leaders</p>
-          <h2>Community updates</h2>
+          <h2>
+            {pinnedForHours ? "Today’s community updates" : "Community updates"}
+          </h2>
         </div>
-        <span>Verified accounts</span>
+        <span>
+          {pinnedForHours ? "Pinned for 24 hours" : "Verified accounts"}
+        </span>
       </div>
       <div className="official-feed__list">
-        {posts.map((post) => {
+        {visiblePosts.map((post) => {
           const supported = post.reactions?.some(
             (reaction) =>
               String(reaction.user?._id || reaction.user) ===

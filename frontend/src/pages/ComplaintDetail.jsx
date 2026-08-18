@@ -213,6 +213,82 @@ const ComplaintDetail = () => {
               ))}
             </div>
           )}
+          {complaint.beforeAfterReports?.length > 0 && (
+            <section
+              className="completion-evidence"
+              aria-label="Field work evidence"
+            >
+              <div className="completion-evidence__heading">
+                <div>
+                  <p className="eyebrow">Field work evidence</p>
+                  <h2>Before and after the repair</h2>
+                </div>
+                <span>{complaint.beforeAfterReports.length} submitted</span>
+              </div>
+              {complaint.beforeAfterReports
+                .slice()
+                .reverse()
+                .map((report) => (
+                  <article
+                    className="completion-evidence__report"
+                    key={report._id}
+                  >
+                    <header>
+                      <div>
+                        <strong>{report.submittedBy || "Field worker"}</strong>
+                        <small>
+                          {report.createdAt
+                            ? formatDate(report.createdAt)
+                            : "Recently submitted"}
+                        </small>
+                      </div>
+                      <span
+                        className={`status status--${String(
+                          report.verificationStatus || "Submitted",
+                        )
+                          .toLowerCase()
+                          .replaceAll(" ", "-")}`}
+                      >
+                        {report.verificationStatus || "Submitted"}
+                      </span>
+                    </header>
+                    {report.note && <p>{report.note}</p>}
+                    <div className="completion-evidence__groups">
+                      <div>
+                        <h3>Before work</h3>
+                        <div className="image-grid">
+                          {report.beforeImages?.map((image) => (
+                            <img
+                              key={image.url}
+                              src={image.url}
+                              alt="Before work evidence"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h3>After work</h3>
+                        <div className="image-grid">
+                          {report.afterImages?.map((image) => (
+                            <img
+                              key={image.url}
+                              src={image.url}
+                              alt="After work evidence"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {report.verificationNote && (
+                      <p className="completion-evidence__decision">
+                        <strong>Officer verification:</strong>{" "}
+                        {report.verificationNote}
+                      </p>
+                    )}
+                  </article>
+                ))}
+            </section>
+          )}
           <div className="location-line">
             <FaLocationDot /> {complaint.ward || "Ward to be confirmed"}{" "}
             <span>·</span> Reported {formatDate(complaint.createdAt)}
