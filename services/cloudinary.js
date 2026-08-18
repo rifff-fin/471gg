@@ -33,9 +33,8 @@ const uploadBuffer = (buffer, options = {}) => {
       {
         folder: options.folder || "ekotro",
         resource_type: options.resource_type || "image",
-        format: options.format || "auto",
         transformation: options.transformation || [
-          { quality: "auto:good", fetch_format: "auto" },
+          { quality: "auto:good" },
         ],
         overwrite: false,
         unique_filename: true,
