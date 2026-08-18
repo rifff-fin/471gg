@@ -30,6 +30,7 @@ const UploadCompletionReport = () => {
   }, []);
   const submit = async (event) => {
     event.preventDefault();
+    // VIVA: FormData field names match the protected complaint-report API route.
     if (!selected)
       return setMessage("Search for and select the complaint first.");
     if (!beforeFiles.length || !afterFiles.length)

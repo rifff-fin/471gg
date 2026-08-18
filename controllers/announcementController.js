@@ -22,6 +22,7 @@ const getAnnouncements = async (req, res) => {
 
 const createAnnouncement = async (req, res) => {
   try {
+    // VIVA: Server-side validation makes the official-post policy enforceable.
     const { title, body, type = "announcement", complaintId } = req.body;
     const jurisdiction = req.user.jurisdiction?.trim();
 
@@ -42,6 +43,7 @@ const createAnnouncement = async (req, res) => {
     }
 
     if (complaintId) {
+      // VIVA: An official cannot attach a complaint from another jurisdiction.
       const complaint = await Complaint.findById(complaintId);
       if (!complaint)
         return res
@@ -83,6 +85,7 @@ const createAnnouncement = async (req, res) => {
         { ordered: false },
       );
     }
+    // VIVA: Persisted notifications work after refresh; Socket.IO updates live users.
     emitOfficialNotification({
       announcement: populatedAnnouncement,
       message: `${req.user.name} shared a new post for ${jurisdiction}.`,

@@ -21,6 +21,7 @@ const uploadBuffer = (buffer, options = {}) => {
   }
 
   if (!isConfigured) {
+    // VIVA: Refuse uploads safely when credentials are unavailable.
     return Promise.reject(
       new Error(
         "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.",
@@ -29,6 +30,7 @@ const uploadBuffer = (buffer, options = {}) => {
   }
 
   return new Promise((resolve, reject) => {
+    // VIVA: Stream memory-held uploads directly to Cloudinary; do not write files locally.
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: options.folder || "ekotro",

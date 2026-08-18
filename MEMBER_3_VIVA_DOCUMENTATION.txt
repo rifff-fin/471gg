@@ -1,0 +1,376 @@
+MEMBER 3 — VIVA DOCUMENTATION
+Project: Ekotro civic platform
+Audit date: 18 August 2026
+
+IMPORTANT AUDIT RESULT
+======================
+1. Mayor/Councillor official updates: IMPLEMENTED and ready to demonstrate,
+   assuming the mayor/councillor accounts have a jurisdiction value.
+2. Cloudinary field-photo workflow: IMPLEMENTED. It is live-ready only after
+   valid Cloudinary credentials are configured and the backend is restarted.
+   Without them, the system deliberately rejects uploads instead of storing
+   unsafe/local files.
+3. Officer electronic signing of government service requests: IMPLEMENTED as
+   protected backend API endpoints and database fields. There is NO dedicated
+   frontend service-request review screen in the current UI, so do not present
+   it as a complete click-through dashboard feature yet. The current officer
+   dashboard is for complaints and field-work verification.
+
+HOW TO USE THIS DOCUMENT DURING THE VIVA
+=========================================
+- Start with the browser workflow: say what the user clicks, what they see,
+  and which role is allowed to do it.
+- Then explain the backend flow: the frontend sends an authenticated API
+  request, a protected route checks the role, the controller validates and
+  saves the change, and notifications/realtime events update other users.
+- If asked to show code, search the project for `VIVA:`. These short markers
+  identify the key frontend and backend lines without changing behaviour.
+- If asked to change the frontend, first identify the React page/component in
+  the "Main directories and files" list. For a business-rule/security change,
+  use the controller, route, middleware, or model instead.
+
+QUICK EXPLANATION MAP
+=====================
+Feature                         Frontend entry point                     Backend decision point
+Official posts                  OfficialUpdates.jsx                      announcementController.js
+24-hour home pinning            Feed.jsx + OfficialAnnouncementList.jsx  Frontend time filter only
+Field-work photo evidence       UploadCompletionReport.jsx                complaintController.js + cloudinary.js
+Officer evidence decision       OfficerDashboard.jsx                      verifyCompletionReport controller
+Service-request signing         No officer UI yet; use API client         serviceRequestController.js
+
+Useful answer when asked "frontend or backend?"
+-------------------------------------------------
+"The frontend controls the screen and sends the request. The backend is the
+source of truth: it authorizes the role, validates the data, writes MongoDB
+records, and sends notifications. A frontend-only change cannot bypass the
+backend checks."
+
+==========================================================================
+FEATURE 1 — MAYOR / COUNCILLOR OFFICIAL POSTS AND RESPONSES
+==========================================================================
+
+Requirement
+-----------
+Ward Councillors or Mayors publish official responses, progress updates and
+public announcements within their jurisdiction.
+
+What is implemented
+-------------------
+- Only users with role "mayor" or "councillor" can create official posts.
+- Each official account must have a jurisdiction. A post is saved with that
+  jurisdiction and author role/name.
+- An official can choose one of three post types:
+    announcement, progress_update, official_response.
+- An optional complaint ID links an official response to a complaint.
+- If the linked complaint has a ward different from the official's
+  jurisdiction, the API returns 403 and blocks the post.
+- Posts are shown at the top of the home feed, above ordinary complaints.
+- A post is pinned there for 24 hours only. After 24 hours it leaves the home
+  feed top area but remains in the official-updates archive; it is not deleted.
+- Citizens can support and comment on posts.
+- Every registered citizen receives a persisted in-app notification.
+- Socket.IO emits a live event, so connected citizens see the notification and
+  feed refresh without a manual reload.
+
+Main directories and files
+--------------------------
+Backend model:
+  models/Announcement.js
+Backend business logic:
+  controllers/announcementController.js
+Backend routes:
+  routes/announcementRoutes.js
+Realtime delivery:
+  services/realtime.js
+  server.js
+Notification database model:
+  models/Notification.js
+Frontend posting screen:
+  frontend/src/pages/OfficialUpdates.jsx
+Frontend official-post feed:
+  frontend/src/components/OfficialAnnouncementList.jsx
+Home feed integration:
+  frontend/src/pages/Feed.jsx
+24-hour frontend pinning and archive rendering:
+  frontend/src/components/OfficialAnnouncementList.jsx
+Notification popup and inbox:
+  frontend/src/components/NotificationCenter.jsx
+  frontend/src/components/NotificationBell.jsx
+  frontend/src/pages/Notifications.jsx
+
+Important endpoints
+-------------------
+GET  /api/announcements
+POST /api/announcements                     mayor or councillor only
+POST /api/announcements/:id/reactions       signed-in user
+POST /api/announcements/:id/comments        signed-in user
+
+Viva demonstration steps
+------------------------
+1. Sign in as a mayor or councillor account that has a jurisdiction, for
+   example the ward/area it represents.
+2. Open /official-updates from the navigation.
+3. Select "Announcement", "Progress update", or "Complaint response".
+4. Write a headline/message. For a complaint response, paste a real complaint
+   ID that belongs to the same ward as the official.
+5. Publish.
+6. Show the post at the top of the / home feed.
+7. Sign in as a citizen in another browser/session and show the notification
+   bell/inbox and the new official post.
+8. Optionally show citizen support and comment actions.
+
+Strong viva explanation
+-----------------------
+"The authorization middleware allows only mayor and councillor roles to call
+the create endpoint. The controller reads the official's jurisdiction from the
+JWT-authenticated user record, validates a linked complaint ward, saves an
+Announcement document, creates a Notification document for every citizen, and
+emits a Socket.IO event for live delivery. The home feed fetches official posts
+separately and renders them before normal complaints."
+
+If your sir asks for a frontend change
+--------------------------------------
+- Change the publish form, labels, validation feedback, or page layout in
+  frontend/src/pages/OfficialUpdates.jsx.
+- Change how posts are displayed, supported, commented on, or filtered in
+  frontend/src/components/OfficialAnnouncementList.jsx.
+- Keep the backend route authorization unchanged unless the requested policy
+  itself changes. The route already limits publishing to mayor/councillor.
+
+If your sir asks for a backend logic change
+-------------------------------------------
+- Change title/body/jurisdiction/linked-complaint validation in
+  controllers/announcementController.js.
+- Change who may publish in routes/announcementRoutes.js.
+- Change stored fields and allowed post types in models/Announcement.js.
+- Explain that a linked complaint is checked against the official's
+  jurisdiction on the server, so a browser cannot safely bypass the ward rule.
+
+How the 24-hour frontend rule was added
+---------------------------------------
+"I did not delete official posts after one day. Feed.jsx passes a
+pinnedForHours={24} property to OfficialAnnouncementList. That component
+compares each post's createdAt time with the current time and renders only
+posts younger than 24 hours on the home page. It refreshes its clock every
+minute, so an expired post disappears even if the page remains open. The
+OfficialUpdates page does not pass that property, so it renders the complete
+official archive. This keeps the home page current without losing public
+records."
+
+==========================================================================
+FEATURE 2 — CLOUDINARY BEFORE/AFTER FIELD-WORK EVIDENCE
+==========================================================================
+
+Requirement
+-----------
+Securely process, compress and deliver before-and-after images uploaded by
+field crews, with the evidence visible on the complaint and reviewable by an
+officer.
+
+What is implemented
+-------------------
+- Field worker visits /field-worker/completion-report.
+- The worker searches actual existing complaints via GET /api/complaints and
+  selects one; they cannot attach proof to a typed/free-form fake title.
+- The worker uploads at least one before and one after image and a work note.
+- Multer accepts images only, holds uploads in memory and limits each image to
+  12 MB (maximum 8 files per request).
+- The backend streams each buffer directly to Cloudinary. No image is written
+  into the project filesystem.
+- Cloudinary stores it in ekotro/before or ekotro/after. Its transformation is
+  quality:auto:good for optimized delivery.
+- The database keeps secure URL, Cloudinary public ID, original filename, MIME
+  type and stage with the related Complaint.beforeAfterReports entry.
+- The evidence is shown in the officer dashboard and is therefore attached to
+  the actual complaint record, not a disconnected report.
+- The assigned officer receives a persisted and live notification. If the case
+  has no assigned officer, all officers/admins receive it so it is not lost.
+- Officer can Verify & mark done (complaint becomes Resolved) or Return to
+  worker with a signed verification note. The worker and citizen are notified.
+
+Main directories and files
+--------------------------
+Cloudinary adapter:
+  services/cloudinary.js
+Upload validation/limits:
+  middleware/uploadMiddleware.js
+Complaint evidence + Cloudinary upload logic:
+  controllers/complaintController.js
+Complaint/evidence schema:
+  models/Complaint.js
+Routes:
+  routes/complaintRoutes.js
+Field worker page:
+  frontend/src/pages/UploadCompletionReport.jsx
+Officer review, images, verification buttons:
+  frontend/src/pages/OfficerDashboard.jsx
+Shared styles:
+  frontend/src/index.css
+
+Important endpoints
+-------------------
+GET  /api/complaints?search=<text>
+POST /api/complaints/:id/reports
+     Role: field_worker, officer, or admin
+     multipart fields: beforeImages[], afterImages[], note
+POST /api/complaints/:id/reports/:reportId/verify
+     Role: officer or admin
+     body: { action: "verify" | "return", note: "..." }
+
+Current configuration check
+---------------------------
+The three Cloudinary environment variables are now present locally. The
+backend must be restarted after changing .env. A live authenticated Cloudinary
+connection still needs to be demonstrated with a real test upload before the
+viva; do not claim upload success until that succeeds.
+
+Required local variables are:
+
+  CLOUDINARY_CLOUD_NAME=your_cloud_name
+  CLOUDINARY_API_KEY=your_api_key
+  CLOUDINARY_API_SECRET=your_api_secret
+
+Never show or commit those secret values in a viva, source file, or Git.
+
+Viva demonstration steps after configuration
+--------------------------------------------
+1. Sign in as a field_worker.
+2. Open /field-worker/completion-report.
+3. Search a real complaint and select it.
+4. Upload one before photo, one after photo, and a work note.
+5. Submit; show the success message.
+6. Sign in as its assigned officer. Show the notification bell/inbox and
+   /officer-dashboard.
+7. Open the complaint in the dashboard. Show both image groups in "Field-work
+   evidence".
+8. Add a verification note and choose "Verify & mark done". Show status
+   Resolved and the audit/notification outcome.
+
+Strong viva explanation
+-----------------------
+"Multer validates and keeps image bytes in memory. The Cloudinary service
+uses upload_stream with quality:auto:good, returning a secure CDN URL plus
+public ID. We save metadata in the Complaint document, so
+the proof remains connected to the complaint lifecycle. Officer verification
+updates the embedded report and complaint status, writes the public ledger,
+and notifies the worker and citizen."
+
+If your sir asks for a frontend change
+--------------------------------------
+- The field worker upload flow is in frontend/src/pages/UploadCompletionReport.jsx.
+  It searches real complaints, creates FormData, and sends beforeImages,
+  afterImages, and a note.
+- The officer review buttons and verification note are in
+  frontend/src/pages/OfficerDashboard.jsx.
+- Image preview on a public complaint is in
+  frontend/src/pages/ComplaintDetail.jsx.
+
+If your sir asks for a backend logic change
+-------------------------------------------
+- File type/size/count restrictions belong in middleware/uploadMiddleware.js.
+- Cloudinary upload settings belong in services/cloudinary.js.
+- The controller converts uploaded files into saved evidence metadata, updates
+  the complaint, and notifies officers in controllers/complaintController.js.
+- The route in routes/complaintRoutes.js applies authentication, roles, and
+  multipart field names. Keep frontend FormData names aligned with it.
+
+Safe explanation of the image flow
+----------------------------------
+"The browser selects files but does not decide whether they are valid. Multer
+validates them in the backend and keeps them in memory. The server streams the
+buffers to Cloudinary, saves only secure URLs and metadata in the complaint,
+then notifies the officer. That is why the proof remains attached to the
+correct complaint and is not stored as a random local file."
+
+==========================================================================
+FEATURE 3 — OFFICER REVIEW AND ELECTRONIC SIGNING OF SERVICE REQUESTS
+==========================================================================
+
+Requirement
+-----------
+Authorized government officers can review, approve, reject and electronically
+sign government service requests.
+
+What is implemented in the backend
+-----------------------------------
+- A citizen can create a ServiceRequest with service type and description.
+- Officer/admin role is required to list all service requests and update one.
+- Officer can set Processing, Approved, Rejected or Completed.
+- Every update requires a non-empty officer comment.
+- The API records reviewedBy, reviewedAt and electronicSignature.
+- electronicSignature includes officer name, "Municipal Officer" and timestamp.
+- The citizen receives a persisted notification after the update.
+
+Main directories and files
+--------------------------
+Service request model:
+  models/ServiceRequest.js
+Controller with signing logic:
+  controllers/serviceRequestController.js
+Protected API routes:
+  routes/serviceRequestRoutes.js
+Authentication/role guard:
+  middleware/authMiddleware.js
+Notification model:
+  models/Notification.js
+Server route registration:
+  server.js
+
+Important endpoints
+-------------------
+POST  /api/service-requests              citizen only
+GET   /api/service-requests/my           citizen only
+GET   /api/service-requests/officer      officer or admin only
+PATCH /api/service-requests/:id          officer or admin only
+PATCH body example:
+{
+  "status": "Approved",
+  "officerComment": "Documents reviewed and approved."
+}
+
+Current limitation — important for an honest viva
+-------------------------------------------------
+There is no dedicated React page that lets an officer list and sign service
+requests through the browser. GovernmentServices.jsx is only a directory of
+external official portals; it is not this review interface. OfficerDashboard
+currently manages complaints, comments, votes and field-work evidence.
+
+So this requirement is API-complete but UI-incomplete. It can be demonstrated
+with Postman/Thunder Client using the endpoints above, but it is not yet a
+full dashboard workflow. Also, this controller creates a database notification
+but does not emit the Socket.IO "notification:new" event, so it will appear on
+the inbox after refresh rather than necessarily as a live popup.
+
+Safe viva wording
+-----------------
+"The authorization, approval/rejection, audit data and electronic signature
+are implemented server-side. The remaining enhancement is a dedicated officer
+service-request UI and live Socket.IO emission for that specific notification.
+The current officer dashboard demonstrates the analogous complaint and
+field-work decision workflow."
+
+If your sir asks to make this a frontend feature
+------------------------------------------------
+Create an officer-only React page that calls GET /api/service-requests/officer
+to list requests and PATCH /api/service-requests/:id to submit status and an
+officer comment. Do not remove the backend role guard: it is what protects
+the electronic-signing action.
+
+==========================================================================
+PRE-DEMO CHECKLIST
+==========================================================================
+1. Restart backend after any code/config changes.
+2. Confirm MongoDB is reachable.
+3. Add Cloudinary credentials to local .env and restart backend before the
+   image demo.
+4. Use distinct accounts: citizen, field_worker, officer, mayor/councillor.
+5. Ensure mayor/councillor user records have a jurisdiction.
+6. Create at least one real citizen complaint before the field-worker demo.
+7. Let an officer open/own that complaint first, then submit field evidence.
+8. Keep two browser sessions/tabs to visibly demonstrate realtime citizen and
+   officer notifications.
+9. In VS Code, use Ctrl+Shift+F and search `VIVA:` before the demo to jump to
+   the tagged implementation lines quickly.
+
+This file is local viva documentation only and is not included in the code
+push.

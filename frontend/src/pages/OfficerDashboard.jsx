@@ -67,11 +67,18 @@ const OfficerDashboard = () => {
   const [userSearch, setUserSearch] = useState("");
   const [users, setUsers] = useState([]);
   const [unread, setUnread] = useState(0);
+  const [serviceRequests, setServiceRequests] = useState([]);
+  const [selectedServiceRequestId, setSelectedServiceRequestId] = useState("");
+  const [serviceStatus, setServiceStatus] = useState("Processing");
+  const [serviceNote, setServiceNote] = useState("");
   const selected = cases.find((item) => item._id === selectedId) || cases[0];
+  const selectedServiceRequest =
+    serviceRequests.find((item) => item._id === selectedServiceRequestId) ||
+    serviceRequests[0];
   const load = async (nextStatus = status) => {
     setBusy(true);
     try {
-      const [response, summary] = await Promise.all([
+      const [response, summary, serviceRequestResponse] = await Promise.all([
         api.get("/complaints/officer/cases", {
           params: {
             search: query || undefined,
@@ -79,10 +86,18 @@ const OfficerDashboard = () => {
           },
         }),
         api.get("/notifications/summary"),
+        api.get("/service-requests/officer"),
       ]);
       const items = response.data.data || [];
       setCases(items);
       setUnread(summary.data.data?.unreadCount || 0);
+      const requests = serviceRequestResponse.data.data || [];
+      setServiceRequests(requests);
+      setSelectedServiceRequestId((current) =>
+        requests.some((item) => item._id === current)
+          ? current
+          : requests[0]?._id || "",
+      );
       setSelectedId((current) =>
         items.some((item) => item._id === current)
           ? current
@@ -167,6 +182,7 @@ const OfficerDashboard = () => {
     }
   };
   const verifyReport = async (report, nextAction) => {
+    // VIVA: Officer decision and note are sent to the backend, which changes complaint status.
     if (!verificationNote.trim())
       return setMessage("Add a verification note before deciding.");
     setBusy(true);
@@ -184,6 +200,31 @@ const OfficerDashboard = () => {
     } catch (error) {
       setMessage(
         error.response?.data?.message || "Could not review the work evidence.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  const updateServiceRequest = async (event) => {
+    event.preventDefault();
+    if (!selectedServiceRequest || !serviceNote.trim()) {
+      setMessage("Choose a service request and add an officer comment.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.patch(`/service-requests/${selectedServiceRequest._id}`, {
+        status: serviceStatus,
+        officerComment: serviceNote.trim(),
+      });
+      setMessage(
+        `Service request ${serviceStatus.toLowerCase()}. The citizen received a live notification.`,
+      );
+      setServiceNote("");
+      await load();
+    } catch (error) {
+      setMessage(
+        error.response?.data?.message || "Could not update the service request.",
       );
     } finally {
       setBusy(false);
@@ -552,6 +593,68 @@ const OfficerDashboard = () => {
             <div className="empty-card">No cases match this view.</div>
           )}
         </section>
+      </section>
+      <section className="service-request-review" aria-labelledby="service-request-heading">
+        <header>
+          <div>
+            <p className="eyebrow">Government services</p>
+            <h2 id="service-request-heading">Review and electronically sign requests</h2>
+            <p>Choose a resident request, record the decision, and send the signed update.</p>
+          </div>
+          <span>{serviceRequests.length} request{serviceRequests.length === 1 ? "" : "s"}</span>
+        </header>
+        {serviceRequests.length ? (
+          <div className="service-request-review__body">
+            <div className="service-request-review__list" aria-label="Service request queue">
+              {serviceRequests.map((request) => (
+                <button
+                  type="button"
+                  key={request._id}
+                  className={selectedServiceRequest?._id === request._id ? "is-selected" : ""}
+                  onClick={() => {
+                    setSelectedServiceRequestId(request._id);
+                    setServiceStatus(request.status === "Pending" ? "Processing" : request.status);
+                    setServiceNote(request.officerComment || "");
+                  }}
+                >
+                  <span className={`status status--${request.status.toLowerCase()}`}>{request.status}</span>
+                  <strong>{request.serviceType}</strong>
+                  <small>{request.citizen?.name || "Citizen"}</small>
+                </button>
+              ))}
+            </div>
+            {selectedServiceRequest && (
+              <form className="service-request-review__form" onSubmit={updateServiceRequest}>
+                <div>
+                  <h3>{selectedServiceRequest.serviceType}</h3>
+                  <p>{selectedServiceRequest.description}</p>
+                  <small>Requested by {selectedServiceRequest.citizen?.name || "Citizen"} ({selectedServiceRequest.citizen?.email || "No email"})</small>
+                </div>
+                <label>
+                  <span>Decision</span>
+                  <select value={serviceStatus} onChange={(event) => setServiceStatus(event.target.value)}>
+                    <option>Processing</option>
+                    <option>Approved</option>
+                    <option>Rejected</option>
+                    <option>Completed</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Signed officer comment</span>
+                  <textarea rows="4" required value={serviceNote} onChange={(event) => setServiceNote(event.target.value)} placeholder="Explain the decision for the resident." />
+                </label>
+                <div className="service-request-review__footer">
+                  <small>The backend records your name, role, and decision time as the electronic signature.</small>
+                  <button className="button button--primary" disabled={busy}>
+                    {busy ? "Saving…" : "Save and sign decision"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        ) : (
+          <p className="completion-empty">No service requests are waiting for review.</p>
+        )}
       </section>
       <section className="officer-access">
         <button type="button" onClick={() => setShowAccess((value) => !value)}>

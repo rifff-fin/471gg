@@ -218,6 +218,7 @@ const toMediaList = async (files = [], stage = "complaint") => {
   const uploads = [];
 
   for (const file of files) {
+    // VIVA: Cloudinary returns a secure URL and public ID; MongoDB stores metadata only.
     const result = await uploadBuffer(file.buffer, {
       folder: "ekotro/" + stage,
       mimeType: file.mimetype,
@@ -863,6 +864,7 @@ const getComplaintComments = async (req, res) => {
 
 const addCompletionReport = async (req, res) => {
   try {
+    // VIVA: A report must contain both before and after evidence for one real complaint.
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint)
       return res
@@ -953,6 +955,7 @@ const addCompletionReport = async (req, res) => {
 
 const verifyCompletionReport = async (req, res) => {
   try {
+    // VIVA: The officer's signed note is required for either approval or return.
     const action = req.body.action;
     const note = req.body.note?.trim();
     if (!["verify", "return"].includes(action) || !note) {
@@ -973,6 +976,7 @@ const verifyCompletionReport = async (req, res) => {
         .json({ success: false, message: "Completion report not found" });
 
     const verified = action === "verify";
+    // VIVA: Approval resolves the complaint; return keeps it in progress for the worker.
     report.verificationStatus = verified ? "Verified" : "Returned";
     report.verifiedBy = req.user.id;
     report.verifiedAt = new Date();

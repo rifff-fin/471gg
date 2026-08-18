@@ -1,5 +1,6 @@
 const ServiceRequest = require("../models/ServiceRequest");
 const Notification = require("../models/Notification");
+const { emitUserNotification } = require("../services/realtime");
 
 // Citizen create request
 
@@ -67,6 +68,7 @@ const getMyServiceRequests = async (req, res) => {
 
 const updateServiceRequest = async (req, res) => {
   try {
+    // VIVA: Only the protected officer/admin route can reach this electronic-signing logic.
     const { status, officerComment } = req.body;
     if (
       !["Processing", "Approved", "Rejected", "Completed"].includes(status) ||
@@ -86,14 +88,22 @@ const updateServiceRequest = async (req, res) => {
     request.status = status;
     request.officerComment = officerComment.trim();
     request.reviewedBy = req.user.id;
+    // VIVA: The signature is an audit record tied to the authenticated officer and time.
     request.reviewedAt = new Date();
     request.electronicSignature = `${req.user.name} · Municipal Officer · ${request.reviewedAt.toLocaleString("en-BD")}`;
     await request.save();
-    await Notification.create({
+    const notification = await Notification.create({
       user: request.citizen,
       title: `Service request ${status}`,
       message: `${req.user.name}: ${request.officerComment}`,
       type: "case_update",
+    });
+    // VIVA: Persist the inbox item and also notify the citizen's active browser.
+    emitUserNotification(String(request.citizen), {
+      notificationId: String(notification._id),
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
     });
 
     res.json({

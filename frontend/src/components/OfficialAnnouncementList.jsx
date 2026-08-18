@@ -56,6 +56,7 @@ const OfficialAnnouncementList = ({
     setDrafts((current) => ({ ...current, [post._id]: "" }));
   };
   const visiblePosts = pinnedForHours
+    // VIVA: This is a display rule—expired posts stay in the archive/database.
     ? posts.filter(
         (post) =>
           now - new Date(post.createdAt).getTime() <=

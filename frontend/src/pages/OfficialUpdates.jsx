@@ -19,6 +19,7 @@ const OfficialUpdates = () => {
     return <Navigate to="/" replace />;
   const submit = async (event) => {
     event.preventDefault();
+    // VIVA: The UI sends the post; the backend still enforces the official role and ward.
     setSaving(true);
     setMessage("");
     try {
