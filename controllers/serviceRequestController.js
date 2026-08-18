@@ -74,12 +74,10 @@ const updateServiceRequest = async (req, res) => {
       !["Processing", "Approved", "Rejected", "Completed"].includes(status) ||
       !officerComment?.trim()
     )
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "A valid status and signed officer note are required.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "A valid status and signed officer note are required.",
+      });
     const request = await ServiceRequest.findById(req.params.id);
     if (!request)
       return res
@@ -94,6 +92,7 @@ const updateServiceRequest = async (req, res) => {
     await request.save();
     const notification = await Notification.create({
       user: request.citizen,
+      serviceRequest: request._id,
       title: `Service request ${status}`,
       message: `${req.user.name}: ${request.officerComment}`,
       type: "case_update",

@@ -10,9 +10,11 @@ router.get("/", protect, async (req, res) => {
   try {
     const query = { user: req.user.id };
     if (req.query.unread === "true") query.read = false;
-    const notifications = await Notification.find(query).sort({
-      createdAt: -1,
-    });
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .populate("complaint", "title")
+      .populate("announcement", "title")
+      .populate("serviceRequest", "serviceType");
 
     res.status(200).json({
       success: true,

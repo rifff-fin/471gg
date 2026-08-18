@@ -21,6 +21,7 @@ import Notifications from "./pages/Notifications";
 import PoliceDashboard from "./pages/PoliceDashboard";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import UploadCompletionReport from "./pages/UploadCompletionReport";
+import MayorDashboard from "./pages/MayorDashboard";
 import { useAuth } from "./context/AuthContext";
 
 function App() {
@@ -130,6 +131,14 @@ function App() {
               <ProtectedRoute>
                 <OfficialUpdates />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mayor-dashboard"
+            element={
+              <RoleProtectedRoute allowedRoles={["mayor", "admin"]}>
+                <MayorDashboard />
+              </RoleProtectedRoute>
             }
           />
           <Route

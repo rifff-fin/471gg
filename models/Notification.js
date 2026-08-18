@@ -34,6 +34,18 @@ const notificationSchema = new mongoose.Schema(
       default: null,
     },
 
+    complaint: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Complaint",
+      default: null,
+    },
+
+    serviceRequest: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ServiceRequest",
+      default: null,
+    },
+
     read: {
       type: Boolean,
 

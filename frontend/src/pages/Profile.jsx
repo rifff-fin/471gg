@@ -76,6 +76,21 @@ const Profile = () => {
         )}
       </section>
       {notice && <div className="notice">{notice}</div>}
+      {ownProfile && profile.role === "mayor" && (
+        <section className="profile-official-tools">
+          <div>
+            <p className="eyebrow">Official account</p>
+            <h2>Manage public communication</h2>
+            <p>
+              Monitor your jurisdiction, publish city updates, and manage your
+              official posts.
+            </p>
+          </div>
+          <Link className="button button--primary" to="/mayor-dashboard">
+            Open mayor dashboard
+          </Link>
+        </section>
+      )}
       {editing && (
         <form className="profile-form" onSubmit={save}>
           {["name", "ward", "avatar"].map((field) => (

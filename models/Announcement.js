@@ -22,6 +22,17 @@ const announcementSchema = new mongoose.Schema(
       ref: "Complaint",
       default: null,
     },
+    images: {
+      type: [
+        {
+          url: { type: String, required: true },
+          publicId: { type: String, default: "" },
+          originalName: { type: String, default: "" },
+          mimeType: { type: String, default: "" },
+        },
+      ],
+      default: [],
+    },
     reactions: {
       type: [
         {
@@ -50,6 +61,11 @@ const announcementSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    pinnedComment: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+    editedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

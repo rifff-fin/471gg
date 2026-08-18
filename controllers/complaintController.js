@@ -31,12 +31,7 @@ const departmentByCategory = {
 
 const routeDepartment = (category) =>
   departmentByCategory[category] || "Citizen Services";
-const authorityRoles = new Set([
-  "officer",
-  "councillor",
-  "mayor",
-  "admin",
-]);
+const authorityRoles = new Set(["officer", "councillor", "mayor", "admin"]);
 const canAccessPrivateChat = (complaint, user) => {
   const ownerId = complaint.createdBy?._id || complaint.createdBy;
   return String(ownerId) === String(user?.id) || authorityRoles.has(user?.role);
@@ -434,6 +429,7 @@ const reviewComplaintByOfficer = async (req, res) => {
     if (mongoose.isValidObjectId(complaint.createdBy)) {
       await Notification.create({
         user: complaint.createdBy,
+        complaint: complaint._id,
         title: `Your complaint is ${status}`,
         message: `${req.user.name}: ${note.trim()}`,
         type: "case_update",
@@ -839,6 +835,35 @@ const addComplaintComment = async (req, res) => {
       complaintId: updatedComplaint._id,
       comment: storedComment,
     });
+    if (req.user?.role === "mayor") {
+      const recipients = mongoose.isValidObjectId(
+        updatedComplaint.assignedOfficer,
+      )
+        ? [updatedComplaint.assignedOfficer]
+        : (
+            await User.find({ role: { $in: ["officer", "admin"] } }).select(
+              "_id",
+            )
+          ).map((user) => user._id);
+      const notification = {
+        title: "Mayor commented on your assigned case",
+        message: `${req.user.name} added a public comment to “${updatedComplaint.title}”.`,
+        type: "case_update",
+      };
+      await Promise.all(
+        recipients.map(async (user) => {
+          await Notification.create({
+            user,
+            complaint: updatedComplaint._id,
+            ...notification,
+          });
+          emitUserNotification(user, {
+            ...notification,
+            complaintId: String(updatedComplaint._id),
+          });
+        }),
+      );
+    }
     res.status(201).json({
       success: true,
       message: "Comment added successfully",
@@ -931,7 +956,11 @@ const addCompletionReport = async (req, res) => {
       };
       await Promise.all(
         officerRecipients.map(async (user) => {
-          await Notification.create({ user, ...notification });
+          await Notification.create({
+            user,
+            complaint: updatedComplaint._id,
+            ...notification,
+          });
           emitUserNotification(user, {
             ...notification,
             complaintId: String(updatedComplaint._id),
@@ -1015,6 +1044,7 @@ const verifyCompletionReport = async (req, res) => {
       recipients.map(async (user) => {
         await Notification.create({
           user,
+          complaint: updatedComplaint._id,
           title: verified
             ? "Work marked complete"
             : "Work report needs attention",
@@ -1130,18 +1160,22 @@ const addCrewChatMessage = async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint)
-      return res.status(404).json({ success: false, message: "Complaint not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     if (!canAccessCrewChat(req.user)) {
       return res.status(403).json({
         success: false,
-        message: "Only officers and field workers can use crew coordination chat.",
+        message:
+          "Only officers and field workers can use crew coordination chat.",
       });
     }
     const body = req.body.body?.trim();
     if (!body || body.length > 1500) {
       return res.status(400).json({
         success: false,
-        message: "Message text is required and must be at most 1,500 characters.",
+        message:
+          "Message text is required and must be at most 1,500 characters.",
       });
     }
     const message = {
@@ -1153,11 +1187,16 @@ const addCrewChatMessage = async (req, res) => {
     };
     complaint.crewChatMessages.push(message);
     const updatedComplaint = await complaint.save();
-    const storedMessage = updatedComplaint.crewChatMessages[
-      updatedComplaint.crewChatMessages.length - 1
-    ];
+    const storedMessage =
+      updatedComplaint.crewChatMessages[
+        updatedComplaint.crewChatMessages.length - 1
+      ];
     emitCrewChatMessage(updatedComplaint._id, storedMessage);
-    res.status(201).json({ success: true, message: "Crew message posted successfully", data: storedMessage });
+    res.status(201).json({
+      success: true,
+      message: "Crew message posted successfully",
+      data: storedMessage,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1165,13 +1204,18 @@ const addCrewChatMessage = async (req, res) => {
 
 const getCrewChatMessages = async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id).select("crewChatMessages");
+    const complaint = await Complaint.findById(req.params.id).select(
+      "crewChatMessages",
+    );
     if (!complaint)
-      return res.status(404).json({ success: false, message: "Complaint not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
     if (!canAccessCrewChat(req.user)) {
       return res.status(403).json({
         success: false,
-        message: "Only officers and field workers can view crew coordination chat.",
+        message:
+          "Only officers and field workers can view crew coordination chat.",
       });
     }
     res.status(200).json({
@@ -1190,19 +1234,28 @@ const assignCrewToComplaint = async (req, res) => {
     const estimatedTime = req.body.estimatedTime?.trim()?.slice(0, 120) || "";
     const crewMemberId = req.body.crewMemberId;
     const crewEmail = req.body.crewEmail?.trim().toLowerCase();
-    if (!taskDescription || taskDescription.length > 1500 || (!crewMemberId && !crewEmail)) {
+    if (
+      !taskDescription ||
+      taskDescription.length > 1500 ||
+      (!crewMemberId && !crewEmail)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Enter a field worker email and a repair instruction of up to 1,500 characters.",
+        message:
+          "Enter a field worker email and a repair instruction of up to 1,500 characters.",
       });
     }
     const complaint = await Complaint.findById(req.params.id).select("title");
     if (!complaint)
-      return res.status(404).json({ success: false, message: "Complaint not found" });
-    const workerQuery = crewMemberId && mongoose.isValidObjectId(crewMemberId)
-      ? { _id: crewMemberId }
-      : { email: crewEmail };
-    const crewMember = await User.findOne(workerQuery).select("name email role");
+      return res
+        .status(404)
+        .json({ success: false, message: "Complaint not found" });
+    const workerQuery =
+      crewMemberId && mongoose.isValidObjectId(crewMemberId)
+        ? { _id: crewMemberId }
+        : { email: crewEmail };
+    const crewMember =
+      await User.findOne(workerQuery).select("name email role");
     if (!crewMember || crewMember.role !== "field_worker") {
       return res.status(404).json({
         success: false,
@@ -1225,6 +1278,7 @@ const assignCrewToComplaint = async (req, res) => {
     const message = `${assignment.assignedByName} assigned you to “${complaint.title}”. Instruction: ${taskDescription}${estimatedTime ? ` Estimated time: ${estimatedTime}.` : ""}`;
     await Notification.create({
       user: crewMember._id,
+      complaint: complaint._id,
       title: "New maintenance assignment",
       message,
       type: "case_update",
