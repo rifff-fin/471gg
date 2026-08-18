@@ -28,9 +28,7 @@ const Navbar = () => {
               <FaFolderOpen /> My reports
             </Link>
             <Link to="/government-services">Government services</Link>
-            {["mayor", "councillor"].includes(user.role) && (
-              <Link to="/official-updates">Official updates</Link>
-            )}
+            <Link to="/official-updates">Community updates</Link>
             {user.role === "field_worker" && (
               <Link to="/field-worker/completion-report">
                 Completion report
@@ -54,6 +52,7 @@ const Navbar = () => {
         ) : (
           <>
             <Link to="/login">Sign in</Link>
+            <Link to="/official-updates">Community updates</Link>
             <Link className="nav-report" to="/register">
               Create account
             </Link>

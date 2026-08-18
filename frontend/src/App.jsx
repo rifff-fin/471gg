@@ -125,14 +125,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/official-updates"
-            element={
-              <ProtectedRoute>
-                <OfficialUpdates />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/official-updates" element={<OfficialUpdates />} />
           <Route
             path="/mayor-dashboard"
             element={

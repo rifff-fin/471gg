@@ -3178,6 +3178,31 @@ body {
   background: #edf8f2;
   color: #456454;
 }
+.official-reader-note {
+  display: flex;
+  max-width: 860px;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 auto 15px;
+  padding: 18px;
+  border: 1px solid #dce8e0;
+  border-radius: 11px;
+  background: #fff;
+  color: #486155;
+}
+.official-reader-note svg {
+  margin-top: 2px;
+  color: var(--green);
+}
+.official-reader-note strong {
+  display: block;
+  color: #193a2e;
+}
+.official-reader-note p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
 .official-publishing-note svg {
   margin-top: 2px;
   color: var(--green);
