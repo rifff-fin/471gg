@@ -1,7 +1,15 @@
 [build]
+<<<<<<< HEAD
   base = "frontend"
   command = "npm run build"
   publish = "dist"
+=======
+  command = "npm install --prefix frontend && npm run build --prefix frontend"
+  publish = "frontend/dist"
+
+[build.environment]
+  VITE_API_BASE_URL = "https://ekotrobackend.onrender.com/api"
+>>>>>>> a7108dcc8877baad7d146f19f66d3601b52a20c6
 
 [[redirects]]
   from = "/*"
