@@ -1,4 +1,5 @@
 const Complaint = require("../models/Complaint");
+const ServiceRequest = require("../models/ServiceRequest");
 const User = require("../models/User");
 const mongoose = require("mongoose");
 const { uploadBuffer } = require("../services/cloudinary");
@@ -1324,6 +1325,205 @@ const getComplaintLedger = async (req, res) => {
   }
 };
 
+// VIVA: Admin dashboard analytics — department performance, citizen engagement,
+// service request analytics, and overall system activity in one snapshot.
+const getAdminAnalytics = async (req, res) => {
+  try {
+    const complaints = await Complaint.find()
+      .select(
+        "title department status priorityLevel priorityScore upvotes downvotes comments chatMessages crewChatMessages ward createdAt assignedOfficer",
+      )
+      .populate("assignedOfficer", "name");
+
+    const serviceRequests = await ServiceRequest.find()
+      .populate("citizen", "name email")
+      .populate("reviewedBy", "name");
+    const users = await User.find().select("name email role createdAt");
+
+    // Complaint statistics
+    const statusBreakdown = complaints.reduce((acc, item) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {});
+    const priorityBreakdown = complaints.reduce((acc, item) => {
+      acc[item.priorityLevel] = (acc[item.priorityLevel] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Department performance
+    const departmentPerformance = {};
+    complaints.forEach((item) => {
+      const dept = item.department || "Unassigned";
+      if (!departmentPerformance[dept]) {
+        departmentPerformance[dept] = {
+          department: dept,
+          total: 0,
+          resolved: 0,
+          inProgress: 0,
+          held: 0,
+          pending: 0,
+          rejected: 0,
+          avgPriorityScore: 0,
+          resolutionRate: 0,
+        };
+      }
+      const deptStats = departmentPerformance[dept];
+      deptStats.total += 1;
+      if (["Resolved", "Closed"].includes(item.status)) deptStats.resolved += 1;
+      else if (item.status === "In Progress") deptStats.inProgress += 1;
+      else if (item.status === "Held Pending") deptStats.held += 1;
+      else if (item.status === "Rejected") deptStats.rejected += 1;
+      else deptStats.pending += 1;
+      deptStats.avgPriorityScore += Number(item.priorityScore || 0);
+    });
+    Object.values(departmentPerformance).forEach((dept) => {
+      dept.avgPriorityScore = Number(
+        (dept.avgPriorityScore / Math.max(dept.total, 1)).toFixed(2),
+      );
+      dept.resolutionRate = Number(
+        ((dept.resolved / Math.max(dept.total, 1)) * 100).toFixed(1),
+      );
+    });
+
+    // Citizen engagement
+    const engagement = {
+      totalUpvotes: complaints.reduce((s, i) => s + Number(i.upvotes || 0), 0),
+      totalDownvotes: complaints.reduce(
+        (s, i) => s + Number(i.downvotes || 0),
+        0,
+      ),
+      totalComments: complaints.reduce(
+        (s, i) => s + (i.comments?.length || 0),
+        0,
+      ),
+      totalChatMessages: complaints.reduce(
+        (s, i) => s + (i.chatMessages?.length || 0),
+        0,
+      ),
+      totalCrewMessages: complaints.reduce(
+        (s, i) => s + (i.crewChatMessages?.length || 0),
+        0,
+      ),
+      mostActiveComplaint: complaints
+        .slice()
+        .sort(
+          (a, b) =>
+            (b.comments?.length || 0) + (b.chatMessages?.length || 0) -
+            ((a.comments?.length || 0) + (a.chatMessages?.length || 0)),
+        )
+        .slice(0, 1)
+        .map((item) => ({
+          complaintId: String(item._id),
+          title: item.title,
+          interactions:
+            (item.comments?.length || 0) + (item.chatMessages?.length || 0),
+        }))[0] || null,
+    };
+
+    // Service request analytics
+    const serviceTypeBreakdown = {};
+    const serviceStatusBreakdown = {};
+    serviceRequests.forEach((request) => {
+      serviceTypeBreakdown[request.serviceType] =
+        (serviceTypeBreakdown[request.serviceType] || 0) + 1;
+      serviceStatusBreakdown[request.status] =
+        (serviceStatusBreakdown[request.status] || 0) + 1;
+    });
+    const signedRequests = serviceRequests.filter(
+      (request) => request.electronicSignature,
+    ).length;
+    const serviceRequestAnalytics = {
+      total: serviceRequests.length,
+      signed: signedRequests,
+      pending: serviceRequests.filter(
+        (request) => request.status === "Pending",
+      ).length,
+      avgReviewHours:
+        serviceRequests.filter((request) => request.reviewedAt).length === 0
+          ? 0
+          : Number(
+              (
+                serviceRequests
+                  .filter((request) => request.reviewedAt)
+                  .reduce(
+                    (sum, request) =>
+                      sum +
+                      (new Date(request.reviewedAt) -
+                        new Date(request.createdAt)) /
+                        3600000,
+                    0,
+                  ) /
+                  serviceRequests.filter((request) => request.reviewedAt).length
+              ).toFixed(1),
+            ),
+      serviceTypeBreakdown,
+      serviceStatusBreakdown,
+    };
+
+    // Overall system activity
+    const systemActivity = {
+      totalUsers: users.length,
+      roleBreakdown: users.reduce((acc, user) => {
+        acc[user.role] = (acc[user.role] || 0) + 1;
+        return acc;
+      }, {}),
+      recentRegistrations: users
+        .slice()
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5)
+        .map((user) => ({
+          name: user.name,
+          role: user.role,
+          joinedAt: user.createdAt,
+        })),
+      recentComplaints: complaints
+        .slice()
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5)
+        .map((item) => ({
+          complaintId: String(item._id),
+          title: item.title,
+          status: item.status,
+          createdAt: item.createdAt,
+        })),
+      recentServiceRequests: serviceRequests
+        .slice()
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5)
+        .map((request) => ({
+          requestId: String(request._id),
+          serviceType: request.serviceType,
+          status: request.status,
+          citizen: request.citizen?.name || "Citizen",
+        })),
+    };
+
+    emitComplaintEvent("dashboard:analytics", {
+      generatedAt: new Date().toISOString(),
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        generatedAt: new Date().toISOString(),
+        complaintStats: {
+          total: complaints.length,
+          statusBreakdown,
+          priorityBreakdown,
+        },
+        departmentPerformance: Object.values(departmentPerformance).sort(
+          (a, b) => b.total - a.total,
+        ),
+        engagement,
+        serviceRequestAnalytics,
+        systemActivity,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getAdminStream = async (req, res) => {
   try {
     const complaints = await Complaint.find().select(
@@ -1405,4 +1605,5 @@ module.exports = {
   assignCrewToComplaint,
   getComplaintLedger,
   getAdminStream,
+  getAdminAnalytics,
 };

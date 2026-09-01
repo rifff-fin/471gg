@@ -26,6 +26,7 @@ const {
   assignCrewToComplaint,
   getComplaintLedger,
   getAdminStream,
+  getAdminAnalytics,
 } = require("../controllers/complaintController");
 const upload = require("../middleware/uploadMiddleware");
 const { protect, authorize } = require("../middleware/authMiddleware");
@@ -46,6 +47,7 @@ router.post(
   reviewComplaintByOfficer,
 );
 router.get("/admin/stream", protect, authorize("admin"), getAdminStream);
+router.get("/admin/analytics", protect, authorize("admin", "officer"), getAdminAnalytics);
 router.post("/:id/upvote", protect, upvoteComplaint);
 router.post("/:id/vote", protect, voteComplaint);
 router.post(

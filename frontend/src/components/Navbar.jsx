@@ -38,6 +38,9 @@ const Navbar = () => {
             {user.role === "mayor" && (
               <Link to="/mayor-dashboard">Mayor dashboard</Link>
             )}
+            {user.role === "admin" && (
+              <Link to="/admin-dashboard">Admin analytics</Link>
+            )}
             {user.role === "police" && (
               <Link to="/police">Police desk</Link>
             )}
