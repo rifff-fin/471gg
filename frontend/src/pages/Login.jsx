@@ -39,7 +39,7 @@ const Login = () => {
 
         <h1>Welcome Back</h1>
 
-        <p className="subtitle">Login to your Ekkotro account</p>
+        <p className="subtitle">Login to your Rifat account</p>
 
         {error && <div className="error-message">{error}</div>}
 

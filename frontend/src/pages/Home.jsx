@@ -664,7 +664,7 @@ const Home = () => {
 
   if (loading) {
     return (
-      <div className="center-message">Loading Ekkotro command board...</div>
+      <div className="center-message">Loading Rifat command board...</div>
     );
   }
 

@@ -43,7 +43,7 @@ const Register = () => {
 
         <h1>Create Account</h1>
 
-        <p className="subtitle">Join Ekkotro as a citizen</p>
+        <p className="subtitle">Join Rifat as a citizen</p>
 
         {error && <div className="error-message">{error}</div>}
 
