@@ -36,9 +36,14 @@ const Register = () => {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <div className="auth-brand">
+          <img src="/ekotrologo.png" alt="Ekotro logo" />
+          <span>Ekotro</span>
+        </div>
+
         <h1>Create Account</h1>
 
-        <p className="subtitle">Join Ekkotro as a citizen</p>
+        <p className="subtitle">Join Rifat as a citizen</p>
 
         {error && <div className="error-message">{error}</div>}
 

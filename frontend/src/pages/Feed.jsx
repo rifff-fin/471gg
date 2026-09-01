@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { FaArrowRight, FaMagnifyingGlass, FaPlus } from "react-icons/fa6";
 import { io } from "socket.io-client";
@@ -122,11 +122,40 @@ const Feed = () => {
     }
   };
 
+  const heroRef = useRef(null);
+  const [heroVisible, setHeroVisible] = useState(false);
+
+  useEffect(() => {
+    const node = heroRef.current;
+    if (!node) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setHeroVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <main className="site-shell feed-page">
-      <section className="feed-hero">
-        <div>
-          <p className="eyebrow">Ekotro · civic action network</p>
+      <section
+        ref={heroRef}
+        className={`ekotro-card ${heroVisible ? "is-visible" : ""}`}
+        aria-label="Ekotro civic action network"
+      >
+        <div className="ekotro-card__overlay" />
+        <div className="ekotro-card__content">
+          <p className="eyebrow eyebrow-brand">
+            <img src="/ekotrologo.png" alt="Ekotro logo" />
+            Ekotro · civic action network
+          </p>
           <h1>
             Make your neighbourhood <em>work better.</em>
           </h1>

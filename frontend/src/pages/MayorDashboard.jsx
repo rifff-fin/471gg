@@ -325,6 +325,17 @@ const MayorDashboard = () => {
                   </div>
                 </header>
                 <p>{post.body}</p>
+                {post.images?.length ? (
+                  <div className="mayor-post-images">
+                    {post.images.map((image) => (
+                      <img
+                        key={image.url || image.publicId || image.originalName}
+                        src={image.url}
+                        alt="Official post attachment"
+                      />
+                    ))}
+                  </div>
+                ) : null}
                 {post.comments?.length ? (
                   <div className="mayor-post-comments">
                     {post.comments

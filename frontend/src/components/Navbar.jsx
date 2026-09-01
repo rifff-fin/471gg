@@ -13,6 +13,11 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <Link className="logo" to="/">
+        <img
+          className="brand-logo"
+          src="/ekotrologo.png"
+          alt="Ekotro logo"
+        />
         <span>একত্র</span> Ekotro
       </Link>
       <div className="nav-links">

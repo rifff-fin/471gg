@@ -28,7 +28,7 @@ import { useAuth } from "./context/AuthContext";
 
 function App() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="center-message">Loading Ekotro…</div>;
+  if (loading) return <div className="center-message">Loading Rifat…</div>;
   return (
     <>
       <Navbar />

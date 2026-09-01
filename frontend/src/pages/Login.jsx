@@ -32,9 +32,14 @@ const Login = () => {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <div className="auth-brand">
+          <img src="/ekotrologo.png" alt="Ekotro logo" />
+          <span>Ekotro</span>
+        </div>
+
         <h1>Welcome Back</h1>
 
-        <p className="subtitle">Login to your Ekkotro account</p>
+        <p className="subtitle">Login to your Rifat account</p>
 
         {error && <div className="error-message">{error}</div>}
 
