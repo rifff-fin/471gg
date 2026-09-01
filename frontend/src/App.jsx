@@ -163,6 +163,27 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppErrorBoundary>
+      <footer className="site-footer">
+        <div className="site-footer__inner">
+          <div className="site-footer__brand">
+            <img src="/ekotrologo.png" alt="Ekotro logo" />
+            <div>
+              <strong>Ekotro</strong>
+              <span>Civic action network</span>
+            </div>
+          </div>
+          <div className="site-footer__links">
+            <a href="/">Home</a>
+            <a href="/official-updates">Updates</a>
+            <a href="/government-services">Services</a>
+            <a href="/report">Report issue</a>
+          </div>
+          <div className="site-footer__meta">
+            <span>Built for better local services</span>
+            <span>© 2026 Ekotro</span>
+          </div>
+        </div>
+      </footer>
     </>
   );
 }

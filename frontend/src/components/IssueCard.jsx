@@ -41,6 +41,17 @@ const IssueCard = ({ complaint = {}, onVote, voting = false }) => {
         >
           {title}
         </Link>
+        {complaint.images?.length > 0 && (
+          <div className="issue-card__images">
+            {complaint.images.slice(0, 2).map((image) => (
+              <img
+                key={image.url || image.publicId || image.originalName}
+                src={image.url}
+                alt={title}
+              />
+            ))}
+          </div>
+        )}
         <p>{complaint.description || "No description was provided."}</p>
         <div className="issue-card__footer">
           <span>
