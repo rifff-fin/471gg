@@ -36,8 +36,9 @@ const decisions = {
   },
   resolve: {
     label: "Mark resolved",
-    hint: "Confirm the issue is completed.",
+    hint: "Confirm the issue is completed and select resolution type.",
     note: "The reported issue has been resolved. Thank you for helping us improve the city.",
+    showCategory: true,
   },
   close: {
     label: "Close case",
@@ -70,6 +71,8 @@ const OfficerDashboard = () => {
   const [busy, setBusy] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
   const [userSearch, setUserSearch] = useState("");
+  const[resolutionCategory, setResolutionCategory] = useState("Repaired");
+  const[resolutionDetails, setResolutionDetails] = useState("");
   const [users, setUsers] = useState([]);
   const [unread, setUnread] = useState(0);
   const [serviceRequests, setServiceRequests] = useState([]);
@@ -194,6 +197,8 @@ const OfficerDashboard = () => {
       await api.post(`/complaints/${selected._id}/review`, {
         action,
         note: note.trim(),
+        resolution_category: action === "resolve" ? resolutionCategory : undefined,
+        resolution_details: action === "resolve" ? resolutionDetails : undefined,
       });
       setMessage(`Decision saved. ${selected.citizenName} has been notified.`);
       await load();
@@ -726,6 +731,34 @@ const OfficerDashboard = () => {
                     Your name, role, decision time, and note appear in the case
                     history and the resident’s inbox.
                   </small>
+                  {decisions[action].showCategory && (<> <div style={{marginTop: "20px", padding: "15px", backgroundColor: "#f0f0f0",
+                    borderRadius: "5px", border: "1px solid #ccc"}}>
+                      <label>
+                        <span>Resolution Category</span>
+                        <select
+                          value={resolutionCategory}
+                          onChange={(event) => setResolutionCategory(event.target.value)}
+                        >
+                          <option value="Repaired">Repaired</option>
+                          <option value="Not Repaired">Not Repaired</option>
+                          <option value="Under Investigation">Under Investigation</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Resolution Details</span>
+                        <textarea
+                          rows="3"
+                          value={resolutionDetails}
+                          onChange={(event) => setResolutionDetails(event.target.value)}
+                        />
+                      </label>
+                      <span> Resolution Category*</span> <select value={resolutionCategory} onChange={(event) => setResolutionCategory(event.target.value)}>
+
+                        <option value="Repaired">Repaired</option>
+                        <option value="Not Repaired">Not Repaired</option>
+                        <option value="Under Investigation">Under Investigation</option>
+                        </select>
+                    </div> </>)}
                 </label>
                 <div className="officer-decision__footer">
                   <span>Citizen receives a live inbox notification.</span>

@@ -403,6 +403,11 @@ const reviewComplaintByOfficer = async (req, res) => {
     complaint.status = status;
     complaint.assigned = true;
     complaint.assignedOfficer = req.user.id;
+    if (action === "resolve" && req.body.resolution_category){
+      complaint.resolution_category = req.body.resolution_category;
+      complaint.resolution_details = req.body.resolution_details || "";
+
+    }
     if (action === "hold") {
       complaint.holdState = "HELD_PENDING";
       complaint.holdReason = note.trim();

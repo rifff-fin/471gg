@@ -168,6 +168,22 @@ const complaintSchema = new mongoose.Schema(
     location: {
       type: { type: String, enum: ["Point"], default: "Point" },
       coordinates: { type: [Number], required: true },
+      resolution_category: {
+        type: {
+          type: String,
+          enum: [
+            "Repaired",
+            "Replaced",
+            "Miantenace",
+            "Coordination",
+            "Adminstrative",
+            "investigation",
+            "Others",
+          ],
+          default: null,
+        },
+        resolution_details: { type: String, default: "" },
+      },
     },
   },
   { timestamps: true },
